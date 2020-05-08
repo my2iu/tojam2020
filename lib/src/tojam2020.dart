@@ -3,6 +3,7 @@ import 'package:tojam2020/webxr_bindings.dart';
 import 'package:js/js.dart';
 import 'dart:web_gl' as webgl;
 import 'dart:web_gl' show WebGL;
+import 'package:tojam2020/src/gl_shaders.dart' as shaders;
 
 void showStartButton() {
   if (navigatorXr == null) {
@@ -36,12 +37,15 @@ void showStartButton() {
   });
 }
 
+shaders.SimpleTriProgram triProgram;
+
 void _startInline(String sessionType, String refType) {
   promiseToFuture<XRSession>(navigatorXr.requestSession(sessionType))
       .then((session) {
     CanvasElement canvas = document.querySelector('canvas');
     webgl.RenderingContext gl =
         canvas.getContext('webgl', {'xrCompatible': true});
+    triProgram = shaders.SimpleTriProgram(gl);
     session.updateRenderState(
         new XRRenderStateInit(baseLayer: new XRWebGLLayer(session, gl)));
     promiseToFuture<XRReferenceSpace>(session.requestReferenceSpace(refType))
@@ -67,5 +71,8 @@ void _startInline(String sessionType, String refType) {
 }
 
 void _drawScene(webgl.RenderingContext gl, XRView view) {
-
+  triProgram.bindProgram();
+  shaders.TrianglesArrayBuffer buf = triProgram.createRenderableBuffer();
+  triProgram.draw(buf);
+  triProgram.unbindProgram();
 }
