@@ -7,23 +7,25 @@ import 'package:tojam2020/src/gl_shaders.dart' as shaders;
 import 'package:tojam2020/gamegeom.dart';
 import 'package:tojam2020/src/gltf_loader.dart';
 
-void showStartButton() {
+void loadResources() {
+  // Start loading some resources immediately
+  loadGlb('resources/3blocks.glb');
+}
+
+void showStartButton(Element uiDiv) {
   if (navigatorXr == null) {
     document.body.appendText('WebXR is not supported in this browser.');
     return;
   }
-
-  // Start loading some resources immediately
-  loadGlb('resources/3blocks.glb');
+  _uiDiv = uiDiv;
 
   // Show the 'Start Vr' button
   promiseToFuture<bool>(navigatorXr.isSessionSupported("immersive-vr"))
       .then((supported) {
     if (!supported) return;
-    document.body
-        .appendHtml('<a href="#" class="startVr"><div>Start VR</div></a>');
-    document.body.querySelector('.startVr').addEventListener('click', (event) {
-      document.body.appendText('clicked');
+    uiDiv.appendHtml('<a href="#" class="startVr"><div>Start VR</div></a>');
+    uiDiv.querySelector('.startVr').addEventListener('click', (event) {
+      uiDiv.appendText('clicked');
       _startInline("immersive-vr", "local");
       event.preventDefault();
     });
@@ -33,22 +35,37 @@ void showStartButton() {
   promiseToFuture<bool>(navigatorXr.isSessionSupported("inline"))
       .then((supported) {
     if (!supported) return;
-    document.body.appendHtml(
+    uiDiv.appendHtml(
         '<a href="#" class="startInline"><div>Start Inline</div></a>');
-    document.body.querySelector('.startInline').addEventListener('click',
+    uiDiv.querySelector('.startInline').addEventListener('click',
         (event) {
-      document.body.appendText('clicked');
+      uiDiv.appendText('clicked');
       _startInline("inline", "viewer");
       event.preventDefault();
     });
   });
 }
 
+Element _uiDiv;
 shaders.SimpleTriProgram triProgram;
+
+void createExitVrButton(XRSession session) {
+    _uiDiv.innerHtml = '';
+    _uiDiv.appendHtml('<a href="#" class="exitVR"><div>Exit VR</div></a>');
+    _uiDiv.querySelector('.exitVR').addEventListener('click', (evt) {
+      session.end();
+      _uiDiv.innerHtml = '';
+      showStartButton(_uiDiv);
+      evt.preventDefault();
+    });
+
+}
 
 void _startInline(String sessionType, String refType) {
   promiseToFuture<XRSession>(navigatorXr.requestSession(sessionType))
       .then((session) {
+        createExitVrButton(session);
+
     CanvasElement canvas = document.querySelector('canvas');
     webgl.RenderingContext gl =
         canvas.getContext('webgl', {'xrCompatible': true});
@@ -58,26 +75,37 @@ void _startInline(String sessionType, String refType) {
     promiseToFuture<XRReferenceSpace>(session.requestReferenceSpace(refType))
         .then((refSpace) {
       session.requestAnimationFrame(allowInterop((time, frame) {
-        var pose = frame.getViewerPose(refSpace);
-        if (pose == null) return;
-
-        var glLayer = session.renderState.baseLayer;
-        gl.bindFramebuffer(WebGL.FRAMEBUFFER, glLayer.framebuffer);
-        gl.clearColor(0, 0, 0, 1.0);
-        gl.clearDepth(1.0);
-        gl.clear(WebGL.COLOR_BUFFER_BIT | WebGL.DEPTH_BUFFER_BIT);
-
-        // gl.cullFace(WebGL.BACK);
-        // gl.enable(WebGL.CULL_FACE);
-
-        pose.views.forEach((view) {
-          var viewport = glLayer.getViewport(view);
-          gl.viewport(viewport.x, viewport.y, viewport.width, viewport.height);
-          _drawScene(gl, view);
-        });
+        _renderFrame(time, frame, gl, refSpace);
       }));
     });
   });
+}
+
+void _renderFrame(num time, XRFrame frame, webgl.RenderingContext gl, XRReferenceSpace refSpace) {
+  XRSession session = frame.session;
+
+  var pose = frame.getViewerPose(refSpace);
+  if (pose != null) {
+    var glLayer = session.renderState.baseLayer;
+    gl.bindFramebuffer(WebGL.FRAMEBUFFER, glLayer.framebuffer);
+    gl.clearColor(0, 0, 0, 1.0);
+    gl.clearDepth(1.0);
+    gl.clear(WebGL.COLOR_BUFFER_BIT | WebGL.DEPTH_BUFFER_BIT);
+
+    // gl.cullFace(WebGL.BACK);
+    // gl.enable(WebGL.CULL_FACE);
+
+    pose.views.forEach((view) {
+      var viewport = glLayer.getViewport(view);
+      gl.viewport(viewport.x, viewport.y, viewport.width, viewport.height);
+      _drawScene(gl, view);
+    });
+  }
+
+  // Render the next frame too
+  session.requestAnimationFrame(allowInterop((time, frame) {
+    _renderFrame(time, frame, gl, refSpace);
+  }));
 }
 
 void _drawScene(webgl.RenderingContext gl, XRView view) {

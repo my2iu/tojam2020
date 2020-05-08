@@ -27,6 +27,7 @@ class XRSession {
   external XRRenderState get renderState;
   external void updateRenderState(XRRenderStateInit options);
   external dynamic requestReferenceSpace(String referenceSpaceType);
+  external dynamic end();
 }
 
 @JS("XRFrame")
