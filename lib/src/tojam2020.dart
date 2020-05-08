@@ -5,11 +5,16 @@ import 'dart:web_gl' as webgl;
 import 'dart:web_gl' show WebGL;
 import 'package:tojam2020/src/gl_shaders.dart' as shaders;
 import 'package:tojam2020/gamegeom.dart';
-import 'package:tojam2020/src/gltf_loader.dart';
+import 'package:tojam2020/src/gltf_loader.dart' as gltf;
+
+gltf.Model model;
 
 void loadResources() {
-  // Start loading some resources immediately
-  loadGlb('resources/3blocks.glb');
+    // Start loading some resources immediately
+  gltf.loadGlb('resources/3blocks.glb').then((gltfmodel) {
+    model = gltfmodel;
+  });
+
 }
 
 void showStartButton(Element uiDiv) {
@@ -18,6 +23,7 @@ void showStartButton(Element uiDiv) {
     return;
   }
   _uiDiv = uiDiv;
+
 
   // Show the 'Start Vr' button
   promiseToFuture<bool>(navigatorXr.isSessionSupported("immersive-vr"))
@@ -85,6 +91,7 @@ void _renderFrame(num time, XRFrame frame, webgl.RenderingContext gl, XRReferenc
   XRSession session = frame.session;
 
   var pose = frame.getViewerPose(refSpace);
+  // When VR is first started, the pose will be null until it figures out a position
   if (pose != null) {
     var glLayer = session.renderState.baseLayer;
     gl.bindFramebuffer(WebGL.FRAMEBUFFER, glLayer.framebuffer);
@@ -117,5 +124,11 @@ void _drawScene(webgl.RenderingContext gl, XRView view) {
   shaders.TrianglesArrayBuffer buf = triProgram.createRenderableBuffer();
   triProgram.draw(buf);
   buf.close();
+
+  if (model != null) {
+    gltf.GlRenderModel render = new gltf.GlRenderModel(model);
+    render.renderScene(gl, 0);
+  }
+
   triProgram.unbindProgram();
 }
