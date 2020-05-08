@@ -1,5 +1,7 @@
 import 'dart:core';
 import 'dart:math' as Math;
+
+import 'dart:typed_data';
 // package com.user00.my2iu.games.framework.geom;
 
 // TODO: This is all a big mess as to whether it's column-major or row-major
@@ -28,6 +30,14 @@ class Mat4
   static Mat4 I()
   {
     return new Mat4([1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1]);
+  }
+
+  static Mat4 fromWebXrFloat32Array(Float32List arr)
+  {
+    Mat4 toReturn = Mat4.I();
+    for (int n = 0; n < 16; n++)
+      toReturn.data[n] = arr[n];
+    return toReturn;
   }
 
 //Mat4.translate = function(x,y,z) {

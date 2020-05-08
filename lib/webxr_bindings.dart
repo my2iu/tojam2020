@@ -91,7 +91,10 @@ class XRViewport {
 
 @JS("XRRigidTransform")
 class XRRigidTransform {
-
+  external DomPointReadOnly get position;
+  external DomPointReadOnly get orientation;
+  external Float32List get matrix;
+  external XRRigidTransform get inverse;
 }
 
 @JS("XRPose")

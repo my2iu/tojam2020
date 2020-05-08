@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 import 'dart:web_gl' as webgl;
 import 'dart:web_gl' show WebGL;
+import 'package:tojam2020/gamegeom.dart';
 
 abstract class GLGenericProgram
 {
@@ -50,7 +51,37 @@ abstract class GLGenericProgram
 
 class SimpleTriProgram extends GLGenericProgram
 {
+  webgl.UniformLocation uniTransform;
   int coordinatesVar;
+  void loadUniforms(Mat4 transform)
+  {
+    Float32List matrix = new Float32List(16);
+    for (int n = 0; n < 16; n++)
+      matrix[n] = (transform.data[n]);
+//    matrix.push(xScale);
+//    matrix.push(0);
+//    matrix.push(0);
+//    matrix.push(0);
+//
+//    matrix.push(0);
+//    matrix.push(yScale);
+//    matrix.push(0);
+//    matrix.push(0);
+//
+//    matrix.push(0);
+//    matrix.push(0);
+//    matrix.push(1);
+//    matrix.push(0);
+//    
+//    matrix.push(dx);
+//    matrix.push(dy);
+//    matrix.push(0);
+//    matrix.push(1);
+
+    gl.useProgram(glProgram);
+    gl.uniformMatrix4fv(uniTransform, false, matrix);
+  }
+
   SimpleTriProgram(webgl.RenderingContext gl)
   {
     this.gl = gl;
@@ -61,11 +92,11 @@ class SimpleTriProgram extends GLGenericProgram
       varying lowp vec3 vColours;
       //varying lowp vec4 uColor;
 
-//      uniform mat4 transformMatrix;  
+      uniform mat4 transformMatrix;  
 
       void main(void) {
-//        vec4 viewPos = transformMatrix * vec4(coordinates, 1.0);
-        gl_Position = vec4(coordinates, 1.0);
+        vec4 viewPos = transformMatrix * vec4(coordinates, 1.0);
+        gl_Position = viewPos;
         vColours = vec3(1.0, 0.0, 0.0);
       }""";
     String fragCode = """
@@ -78,8 +109,8 @@ class SimpleTriProgram extends GLGenericProgram
     glProgram = GLGenericProgram.createShaderProgram(gl, vertCode, fragCode);
     gl.useProgram(glProgram);
 
-    // uniTransform = gl.getUniformLocation(glProgram, "transformMatrix");
-    // loadUniforms(Mat4.I());
+    uniTransform = gl.getUniformLocation(glProgram, "transformMatrix");
+    loadUniforms(Mat4.I());
     coordinatesVar = gl.getAttribLocation(glProgram, "coordinates");
     // colorsVar = gl.getAttribLocation(glProgram, "colours");
   }
@@ -106,8 +137,8 @@ class SimpleTriProgram extends GLGenericProgram
     // graphics hardware
     //
     List<double> points = [
-      -0.5, -0.5, 0.0, 0.5, -0.5, 0.0, 0.5, 0.5, 0.0, 
-      -0.5, -0.5, 0.0, -0.5, 0.5, 0.0, 0.5, 0.5, 0.0
+      -0.5, -0.5, -7.0, 0.5, -0.5, -7.0, 0.5, 0.5, -7.0, 
+      -0.5, -0.5, -7.0, -0.5, 0.5, -7.0, 0.5, 0.5, -7.0
     ];
 
     TrianglesArrayBuffer triangles = new TrianglesArrayBuffer(gl);

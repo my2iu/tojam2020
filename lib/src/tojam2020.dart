@@ -4,6 +4,7 @@ import 'package:js/js.dart';
 import 'dart:web_gl' as webgl;
 import 'dart:web_gl' show WebGL;
 import 'package:tojam2020/src/gl_shaders.dart' as shaders;
+import 'package:tojam2020/gamegeom.dart';
 
 void showStartButton() {
   if (navigatorXr == null) {
@@ -60,6 +61,9 @@ void _startInline(String sessionType, String refType) {
         gl.clearDepth(1.0);
         gl.clear(WebGL.COLOR_BUFFER_BIT | WebGL.DEPTH_BUFFER_BIT);
 
+        // gl.cullFace(WebGL.BACK);
+        // gl.enable(WebGL.CULL_FACE);
+
         pose.views.forEach((view) {
           var viewport = glLayer.getViewport(view);
           gl.viewport(viewport.x, viewport.y, viewport.width, viewport.height);
@@ -72,7 +76,12 @@ void _startInline(String sessionType, String refType) {
 
 void _drawScene(webgl.RenderingContext gl, XRView view) {
   triProgram.bindProgram();
+  Mat4 transformMatrix = Mat4.I();
+  transformMatrix = transformMatrix.mul(Mat4.fromWebXrFloat32Array(view.transform.inverse.matrix));
+  transformMatrix = transformMatrix.mul(Mat4.fromWebXrFloat32Array(view.projectionMatrix));
+  triProgram.loadUniforms(transformMatrix);
   shaders.TrianglesArrayBuffer buf = triProgram.createRenderableBuffer();
   triProgram.draw(buf);
+  buf.close();
   triProgram.unbindProgram();
 }
