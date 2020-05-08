@@ -5,6 +5,7 @@ import 'dart:web_gl' as webgl;
 import 'dart:web_gl' show WebGL;
 import 'package:tojam2020/src/gl_shaders.dart' as shaders;
 import 'package:tojam2020/gamegeom.dart';
+import 'package:tojam2020/src/gltf_loader.dart';
 
 void showStartButton() {
   if (navigatorXr == null) {
@@ -12,6 +13,10 @@ void showStartButton() {
     return;
   }
 
+  // Start loading some resources immediately
+  loadGlb('resources/3blocks.glb');
+
+  // Show the 'Start Vr' button
   promiseToFuture<bool>(navigatorXr.isSessionSupported("immersive-vr"))
       .then((supported) {
     if (!supported) return;
@@ -24,6 +29,7 @@ void showStartButton() {
     });
   });
 
+  // Show the 'Start inline' button
   promiseToFuture<bool>(navigatorXr.isSessionSupported("inline"))
       .then((supported) {
     if (!supported) return;
