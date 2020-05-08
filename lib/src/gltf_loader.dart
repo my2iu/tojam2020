@@ -4,19 +4,59 @@ library gltf_reader;
 import 'dart:convert';
 import 'dart:html';
 import 'package:js/js.dart';
-
+import 'dart:web_gl' as webgl;
+import 'dart:web_gl' show WebGL;
 import 'dart:typed_data';
 
+class GlRenderModel {
+  Model model;
 
-class GltfModel {
-  GltfJsonRoot jsonRoot;
+  GlRenderModel(Model model) {
+    this.model = model;
+  }
+
+  void renderScene(webgl.RenderingContext gl, int sceneIdx) {
+    if (model.root.scenes[sceneIdx].nodes != null) {
+      model.root.scenes[sceneIdx].nodes.forEach((nodeIdx) {
+        renderNode(gl, nodeIdx);
+      });
+    }
+  }
+  void renderNode(webgl.RenderingContext gl, int nodeIdx) {
+    Node node = model.root.nodes[nodeIdx];
+    if (node.children != null) {
+      node.children.forEach((childIdx) {
+        renderNode(gl, childIdx);
+      });
+    }
+    if (node.mesh != null) {
+      renderMesh(gl, node.mesh);
+    }
+  }
+
+  void renderMesh(webgl.RenderingContext gl, int meshIdx) {
+    model.root.meshes[meshIdx].primitives.forEach((primitive) {
+      var pos = primitive.attributes['POSITION'];
+      if (primitive.indices != null) {
+
+      } else {
+
+      }
+window.console.log(primitive);
+    });
+  }
+
+}
+
+class Model {
+  JsonRoot root;
   Uint8List binData;
 }
 
-void loadGlb(String file) {
+Future<Model> loadGlb(String file) {
   // I can't figure out how window.fetch() is supposed to work in 
   // Dart, so I'll just XMLHttpRequest it.
-  HttpRequest.request(file, responseType: 'arraybuffer').then((request) {
+  return HttpRequest.request(file, responseType: 'arraybuffer').then((request) {
     ByteBuffer response = request.response;
     ByteData view = ByteData.view(response);
     int offset = 0;
@@ -32,14 +72,15 @@ void loadGlb(String file) {
     }
     int length = view.getUint32(offset, Endian.little);
     offset += 4;
-    GltfModel model = new GltfModel();
+    Model model = new Model();
     while (offset < length) {
       offset = _readChunk(model, view, offset);
     }
+    return model;
   });
 }
 
-int _readChunk(GltfModel model, ByteData view, int offset) {
+int _readChunk(Model model, ByteData view, int offset) {
   int chunkLength = view.getUint32(offset, Endian.little);
   offset += 4;
   int chunkType = view.getUint32(offset, Endian.little);
@@ -48,8 +89,7 @@ int _readChunk(GltfModel model, ByteData view, int offset) {
     // JSON
     Uint8List chunkByteData = view.buffer.asUint8List(offset + view.offsetInBytes, chunkLength);
     String json = new Utf8Decoder().convert(chunkByteData);
-    model.jsonRoot = _Json.parse(json);
-    window.console.log(model.jsonRoot);
+    model.root = _Json.parse(json);
   } else if (chunkType == 0x004e4942) {
     // BIN
     Uint8List chunkByteData = view.buffer.asUint8List(offset + view.offsetInBytes, chunkLength);
@@ -70,13 +110,150 @@ class _Json {
 
 @JS()
 @anonymous
-class GltfJsonRoot {
-  external GltfAsset get asset;
+class JsonRoot {
+  external Asset get asset;
+  external List<Accessor> get accessors;
+  external List<Animation> get animations;
+  external int get scene;
+  external List<Buffer> get buffers;
+  external List<BufferView> get bufferViews;
+  external List<Camera> get cameras;
+  external List<Image> get images;
+  external List<Material> get materials;
+  external List<Mesh> get meshes;
+  external List<Node> get nodes;
+  external List<Sampler> get samplers;
+  external List<Scene> get scenes;
+  external List<Skin> get skins;
+  external List<Texture> get textures;
 }
 
 @JS()
 @anonymous
-class GltfAsset {
+class Asset {
   external String get version;
 
+}
+
+@JS()
+@anonymous
+class Accessor {
+  external int get bufferView;
+  external int get byteOffset;
+  external int get componentType; 
+  external bool get normalized;
+  external int get count;
+  external String get type;
+  external List<num> get max;
+  external List<num> get min;
+  external dynamic get sparse;
+  external String get name;
+}
+
+@JS()
+@anonymous
+class Animation {
+
+}
+
+@JS()
+@anonymous
+class Buffer {
+  external String get uri;
+  external int get byteLength;
+  external String get name;
+}
+
+@JS()
+@anonymous
+class BufferView {
+  external int get buffer;
+  external int get byteOffset;
+  external int get byteLength;
+  external int get byteStride;
+  external int get target;
+}
+
+@JS()
+@anonymous
+class Camera {
+
+}
+
+@JS()
+@anonymous
+class Image {
+  external String get uri;
+  external String get mimeType;
+  external int get bufferView;
+}
+
+@JS()
+@anonymous
+class Material {
+  external String get name;
+  external dynamic get pbrMetallicRoughness;
+  external dynamic get normalTexture;
+  external dynamic get occlusionTexture;
+  external dynamic get emissiveTexture;
+  // other ones
+}
+
+@JS()
+@anonymous
+class Mesh {
+  external List<Primitive> get primitives;
+  external List<num> get weights;
+}
+
+@JS()
+@anonymous
+class Primitive {
+  external Map<String, int> get attributes;
+  external int get indices;
+  external int get material;
+  external int get mode;
+
+}
+
+@JS()
+@anonymous
+class Node {
+  external int get camera;
+  external List<int> get children;
+  external int get skin;
+  external List<num> get matrix;
+  external int get mesh;
+  external List<num> get rotation;
+  external List<num> get scale;
+  external List<num> get translation;
+  external List<num> get weights;
+  external String get name;
+}
+
+@JS()
+@anonymous
+class Sampler {
+
+}
+
+@JS()
+@anonymous
+class Scene {
+  external List<int> get nodes;
+  external String get name;
+}
+
+@JS()
+@anonymous
+class Skin {
+
+}
+
+@JS()
+@anonymous
+class Texture {
+  external int get sampler;
+  external int get source;
+  external String get name;
 }

@@ -5,7 +5,9 @@ import 'dart:web_gl' as webgl;
 import 'dart:web_gl' show WebGL;
 import 'package:tojam2020/src/gl_shaders.dart' as shaders;
 import 'package:tojam2020/gamegeom.dart';
-import 'package:tojam2020/src/gltf_loader.dart';
+import 'package:tojam2020/src/gltf_loader.dart' as gltf;
+
+gltf.Model model;
 
 void showStartButton() {
   if (navigatorXr == null) {
@@ -14,7 +16,9 @@ void showStartButton() {
   }
 
   // Start loading some resources immediately
-  loadGlb('resources/3blocks.glb');
+  gltf.loadGlb('resources/3blocks.glb').then((gltfmodel) {
+    model = gltfmodel;
+  });
 
   // Show the 'Start Vr' button
   promiseToFuture<bool>(navigatorXr.isSessionSupported("immersive-vr"))
@@ -89,5 +93,11 @@ void _drawScene(webgl.RenderingContext gl, XRView view) {
   shaders.TrianglesArrayBuffer buf = triProgram.createRenderableBuffer();
   triProgram.draw(buf);
   buf.close();
+
+  if (model != null) {
+    gltf.GlRenderModel render = new gltf.GlRenderModel(model);
+    render.renderScene(gl, 0);
+  }
+
   triProgram.unbindProgram();
 }
