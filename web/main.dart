@@ -3,5 +3,6 @@ import 'package:tojam2020/webxr_bindings.dart';
 import 'package:tojam2020/src/tojam2020.dart';
 
 void main() {
-  showStartButton();
+  loadResources();
+  showStartButton(querySelector('.titleButtons'));
 }

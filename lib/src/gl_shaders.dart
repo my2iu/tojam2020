@@ -137,8 +137,8 @@ class SimpleTriProgram extends GLGenericProgram
     // graphics hardware
     //
     List<double> points = [
-      -0.5, -0.5, -7.0, 0.5, -0.5, -7.0, 0.5, 0.5, -7.0, 
-      -0.5, -0.5, -7.0, -0.5, 0.5, -7.0, 0.5, 0.5, -7.0
+      -0.5, -0.5, -3.0, 0.5, -0.5, -3.0, 0.5, 0.5, -3.0, 
+      -0.5, -0.5, -3.0, -0.5, 0.5, -3.0, 0.5, 0.5, -3.0
     ];
 
     TrianglesArrayBuffer triangles = new TrianglesArrayBuffer(gl);
