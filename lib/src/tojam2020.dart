@@ -6,6 +6,7 @@ import 'dart:web_gl' show WebGL;
 import 'package:tojam2020/src/gl_shaders.dart' as shaders;
 import 'package:tojam2020/gamegeom.dart';
 import 'package:tojam2020/src/gltf_loader.dart' as gltf;
+import 'dart:math' as Math;
 
 gltf.Model model;
 
@@ -102,11 +103,40 @@ void _renderFrame(num time, XRFrame frame, webgl.RenderingContext gl, XRReferenc
     // gl.cullFace(WebGL.BACK);
     // gl.enable(WebGL.CULL_FACE);
 
+    // Calculate viewport limits so that we can render to canvas too.
+    num viewLeft = 0, viewTop = 0, viewRight = 0, viewBottom = 0;
     pose.views.forEach((view) {
       var viewport = glLayer.getViewport(view);
+      viewLeft = Math.min(viewLeft, viewport.x);
+      viewTop = Math.min(viewTop, viewport.y);
+      viewRight = Math.max(viewRight, viewport.x + viewport.width);
+      viewBottom = Math.max(viewBottom, viewport.y + viewport.height);
+    });
+
+    // Render normally
+    pose.views.forEach((view) {
+      var viewport = glLayer.getViewport(view);
+
       gl.viewport(viewport.x, viewport.y, viewport.width, viewport.height);
       _drawScene(gl, view);
     });
+
+    // Render to canvas as well
+    gl.canvas.width = viewRight - viewLeft;
+    gl.canvas.height = viewBottom - viewTop;
+    if (glLayer.framebuffer != null) {
+      gl.bindFramebuffer(WebGL.FRAMEBUFFER, null);
+      gl.clearColor(0, 0, 0, 1.0);
+      gl.clearDepth(1.0);
+      gl.clear(WebGL.COLOR_BUFFER_BIT | WebGL.DEPTH_BUFFER_BIT);
+
+      pose.views.forEach((view) {
+        var viewport = glLayer.getViewport(view);
+        gl.viewport(viewport.x, viewport.y, viewport.width, viewport.height);
+        _drawScene(gl, view);
+      });
+
+    }
   }
 
   // Render the next frame too
@@ -127,7 +157,7 @@ void _drawScene(webgl.RenderingContext gl, XRView view) {
 
   if (model != null) {
     gltf.GlRenderModel render = new gltf.GlRenderModel(model);
-    render.renderScene(gl, 0);
+    //render.renderScene(gl, 0);
   }
 
   triProgram.unbindProgram();
