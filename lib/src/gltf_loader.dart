@@ -36,7 +36,7 @@ class GlRenderModel {
 
   void renderMesh(webgl.RenderingContext gl, int meshIdx) {
     model.root.meshes[meshIdx].primitives.forEach((primitive) {
-      var pos = primitive.attributes['POSITION'];
+      var pos = primitive.attributes.POSITION;
       if (primitive.indices != null) {
 
       } else {
@@ -209,7 +209,7 @@ class Mesh {
 @JS()
 @anonymous
 class Primitive {
-  external Map<String, int> get attributes;
+  external PrimitiveAttributes get attributes;
   external int get indices;
   external int get material;
   external int get mode;
@@ -256,4 +256,17 @@ class Texture {
   external int get sampler;
   external int get source;
   external String get name;
+}
+
+@JS()
+@anonymous
+class PrimitiveAttributes {
+  external int get POSITION;
+  external int get NORMAL;
+  external int get TANGENT;
+  external int get TEXCOORD_0;
+  external int get TEXCOORD_1;
+  external int get COLOR_0;
+  external int get JOINTS_0;
+  external int get WEIGHTS_0;
 }
