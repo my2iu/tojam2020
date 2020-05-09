@@ -80,6 +80,7 @@ Future<Model> loadGlb(String file) {
         // return imgCanvas;
         return imgEl;
       }));
+      // imgEl.src = 'resources/256x1.png';
       imgEl.src = Url.createObjectUrl(blob);
     });
     // TODO: Also separate out the texture data, then we can just dump the

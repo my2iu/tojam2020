@@ -140,25 +140,9 @@ class SimpleTriProgram extends GLGenericProgram {
     // Copy an array of data points forming a triangle to the
     // graphics hardware
     //
-    List<double> points = [
-      -0.5,
-      -0.5,
-      -3.0,
-      0.5,
-      -0.5,
-      -3.0,
-      0.5,
-      0.5,
-      -3.0,
-      -0.5,
-      -0.5,
-      -3.0,
-      -0.5,
-      0.5,
-      -3.0,
-      0.5,
-      0.5,
-      -3.0
+    List<double> points = [-0.5, -0.5, -3.0, 0.5, -0.5, -3.0,
+      0.5, 0.5, -3.0, -0.5, -0.5, -3.0,
+      -0.5, 0.5, -3.0, 0.5, 0.5, -3.0
     ];
 
     TrianglesArrayBuffer triangles = new TrianglesArrayBuffer(gl);
@@ -219,7 +203,7 @@ class TexturedProgram extends GLGenericProgram {
 //      attribute vec3 colours;
 
       varying lowp vec3 vColours;
-      varying mediump vec2 vTextureCoords;
+      varying highp vec2 vTextureCoords;
       //varying lowp vec4 uColor;
 
       uniform mat4 transformMatrix;  
@@ -232,7 +216,7 @@ class TexturedProgram extends GLGenericProgram {
       }""";
     String fragCode = """
       varying lowp vec3 vColours;
-      varying mediump vec2 vTextureCoords;
+      varying highp vec2 vTextureCoords;
 
       uniform sampler2D uSampler;
 
@@ -275,6 +259,7 @@ class TexturedProgram extends GLGenericProgram {
         Mat4 transform,
         gltf.Model model, gltf.Primitive primitive,
         webgl.Buffer arrayBuffer, webgl.Buffer elementArrayBuffer) {
+
     gl.bindBuffer(WebGL.ARRAY_BUFFER, arrayBuffer);
     gl.bindBuffer(WebGL.ELEMENT_ARRAY_BUFFER, elementArrayBuffer);
 
@@ -282,6 +267,8 @@ class TexturedProgram extends GLGenericProgram {
     // Bind the position data
     var posAccess = model.root.accessors[primitive.attributes.POSITION];
     GlRenderModel.bindGltfAccessor(gl, posAccess, coordinatesVar, model);
+    var texAccess = model.root.accessors[primitive.attributes.TEXCOORD_0];
+    GlRenderModel.bindGltfAccessor(gl, texAccess, textureCoordinatesVar, model);
 
     loadUniforms(transform);
     gl.uniform1i(uniSampler, 0);
@@ -347,8 +334,8 @@ class GlRenderModel {
         gl.texParameteri(WebGL.TEXTURE_2D, WebGL.TEXTURE_WRAP_S, WebGL.CLAMP_TO_EDGE);
         gl.texParameteri(WebGL.TEXTURE_2D, WebGL.TEXTURE_WRAP_T, WebGL.CLAMP_TO_EDGE);
         // gl.generateMipmap(WebGL.TEXTURE_2D);
-        // gl.texImage2D(WebGL.TEXTURE_2D, 0, WebGL.RGBA, 3, 1, 0, WebGL.RGBA, WebGL.UNSIGNED_BYTE,
-        //   Uint8List.fromList([255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255]));
+        // gl.texImage2D(WebGL.TEXTURE_2D, 0, WebGL.RGBA, 2, 2, 0, WebGL.RGBA, WebGL.UNSIGNED_BYTE,
+        //   Uint8List.fromList([255, 0, 255, 255, 0, 0, 255, 255, 255, 255, 0, 255, 0, 0, 255, 255]));
         imageTextures[imgTextureIdx] = texture;
         document.body.append(imgEl);
       });
@@ -502,6 +489,8 @@ class GlRenderModel {
       if (primitive.indices != null) {
         // Load in the accessor data to the GPU
 
+      useShader(shader);
+
       if (primitive.material != null) {
         gltf.Material mat = model.root.materials[primitive.material];
         if (mat.pbrMetallicRoughness != null 
@@ -509,7 +498,7 @@ class GlRenderModel {
           gltf.TextureReference ref = (mat.pbrMetallicRoughness as gltf.PbrMetallicRoughness).baseColorTexture;
           gltf.Texture tex = model.root.textures[ref.index];
           // if (model.images[tex.source].
-          // gl.activeTexture(WebGL.TEXTURE0);
+          gl.activeTexture(WebGL.TEXTURE0);
           gl.bindTexture(WebGL.TEXTURE_2D, imageTextures[tex.source]);
         }
       }
