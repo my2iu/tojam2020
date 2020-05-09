@@ -36,13 +36,12 @@ class GlRenderModel {
 
   void renderMesh(webgl.RenderingContext gl, int meshIdx) {
     model.root.meshes[meshIdx].primitives.forEach((primitive) {
-      var pos = primitive.attributes.POSITION;
+      var posAccess = model.root.accessors[primitive.attributes.POSITION];
       if (primitive.indices != null) {
-
+        
       } else {
 
       }
-window.console.log(primitive);
     });
   }
 
@@ -51,6 +50,8 @@ window.console.log(primitive);
 class Model {
   JsonRoot root;
   Uint8List binData;
+  Uint8List accessorData;
+  int accessorDataOffset;
 }
 
 Future<Model> loadGlb(String file) {
@@ -72,10 +73,34 @@ Future<Model> loadGlb(String file) {
     }
     int length = view.getUint32(offset, Endian.little);
     offset += 4;
+
+    // Read each of the chunks
     Model model = new Model();
     while (offset < length) {
       offset = _readChunk(model, view, offset);
     }
+
+    // The accessor data and image data is all mixed together, but
+    // we don't want to upload the image data to the GPU. So we'll
+    // try to figure out which part of the buffer contains only
+    // accessor data. This won't work if accessor data is intermixed
+    // with image data or stored in different files etc.
+    int accessorDataStart = -1, accessorDataEnd = -1;
+    model.root.accessors.forEach((accessor) {
+      if (accessor.bufferView == null) return;
+      var bufView = model.root.bufferViews[accessor.bufferView];
+      if (bufView.buffer != 0) return;
+      if (model.root.buffers[0].uri != null) return;
+      int byteOffset = bufView.byteOffset != null ? bufView.byteOffset : 0;
+      if (accessorDataStart == -1 || byteOffset < accessorDataStart) {
+        accessorDataStart = byteOffset;
+      }
+      if (accessorDataEnd == -1 || byteOffset + bufView.byteLength > accessorDataEnd) {
+        accessorDataEnd = byteOffset + bufView.byteLength;
+      }
+      model.accessorData = model.binData.sublist(accessorDataStart, accessorDataEnd);
+      model.accessorDataOffset = -accessorDataStart;
+    });
     return model;
   });
 }

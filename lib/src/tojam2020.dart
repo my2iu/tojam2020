@@ -160,7 +160,7 @@ void _drawScene(webgl.RenderingContext gl, XRView view) {
 
   if (model != null) {
     gltf.GlRenderModel render = new gltf.GlRenderModel(model);
-    //render.renderScene(gl, 0);
+    render.renderScene(gl, 0);
   }
 
   triProgram.unbindProgram();
