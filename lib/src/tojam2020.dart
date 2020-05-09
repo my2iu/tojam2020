@@ -100,6 +100,9 @@ void _renderFrame(num time, XRFrame frame, webgl.RenderingContext gl, XRReferenc
     gl.clearDepth(1.0);
     gl.clear(WebGL.COLOR_BUFFER_BIT | WebGL.DEPTH_BUFFER_BIT);
 
+    gl.enable(WebGL.DEPTH_TEST); 
+    gl.depthFunc(WebGL.LEQUAL);  
+
     // gl.cullFace(WebGL.BACK);
     // gl.enable(WebGL.CULL_FACE);
 
@@ -148,8 +151,8 @@ void _renderFrame(num time, XRFrame frame, webgl.RenderingContext gl, XRReferenc
 void _drawScene(webgl.RenderingContext gl, XRView view) {
   triProgram.bindProgram();
   Mat4 transformMatrix = Mat4.I();
-  transformMatrix = transformMatrix.mul(Mat4.fromWebXrFloat32Array(view.transform.inverse.matrix));
-  transformMatrix = transformMatrix.mul(Mat4.fromWebXrFloat32Array(view.projectionMatrix));
+  transformMatrix = Mat4.fromWebXrFloat32Array(view.transform.inverse.matrix).mul(transformMatrix);
+  transformMatrix = Mat4.fromWebXrFloat32Array(view.projectionMatrix).mul(transformMatrix);
   triProgram.loadUniforms(transformMatrix);
   shaders.TrianglesArrayBuffer buf = triProgram.createRenderableBuffer();
   triProgram.draw(buf);

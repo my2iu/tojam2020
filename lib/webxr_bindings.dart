@@ -39,6 +39,9 @@ class XRFrame {
 @JS("XRRenderState")
 class XRRenderState {
   external XRWebGLLayer get baseLayer;
+  external num get depthFar;
+  external num get depthNear;
+  external num get inlineVerticalFieldOfView;
 }
 
 @JS()
