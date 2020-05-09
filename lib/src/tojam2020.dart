@@ -9,11 +9,15 @@ import 'package:tojam2020/src/gltf_loader.dart' as gltf;
 import 'dart:math' as Math;
 
 gltf.Model model;
+gltf.Model floorModel;
 
 void loadResources() {
     // Start loading some resources immediately
   gltf.loadGlb('resources/3blocks.glb').then((gltfmodel) {
     model = gltfmodel;
+  });
+  gltf.loadGlb('resources/ming_floor.glb').then((gltfmodel) {
+    floorModel = gltfmodel;
   });
 
 }
@@ -162,6 +166,10 @@ void _drawScene(webgl.RenderingContext gl, XRView view) {
   if (model != null) {
     shaders.GlRenderModel render = new shaders.GlRenderModel(model, triProgram);
     render.renderScene(gl, transformMatrix.mul(Mat4.I().translateThis(2, 0, -3)), 0);
+  }
+  if (floorModel != null) {
+    shaders.GlRenderModel render = new shaders.GlRenderModel(floorModel, triProgram);
+    render.renderScene(gl, transformMatrix.mul(Mat4.I().translateThis(-2, -2 - 1.5, 2)), 0);
   }
 
   triProgram.unbindProgram();
