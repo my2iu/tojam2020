@@ -193,23 +193,36 @@ class GlRenderModel {
     this.shader = shader;
   }
 
-  void renderScene(webgl.RenderingContext gl, int sceneIdx) {
+  void renderScene(webgl.RenderingContext gl, Mat4 transform, int sceneIdx) {
     if (model.root.scenes[sceneIdx].nodes != null) {
       model.root.scenes[sceneIdx].nodes.forEach((nodeIdx) {
-        renderNode(gl, nodeIdx);
+        renderNode(gl, transform, nodeIdx);
       });
     }
   }
 
-  void renderNode(webgl.RenderingContext gl, int nodeIdx) {
+  void renderNode(webgl.RenderingContext gl, Mat4 transform, int nodeIdx) {
     gltf.Node node = model.root.nodes[nodeIdx];
+    if (node.matrix != null) {
+      transform = transform.mul(new Mat4(node.matrix));
+    } else {
+      if (node.translation != null) {
+        transform = transform.mul(Mat4.I().translateThis(node.translation[0], node.translation[1], node.translation[2]));
+      } 
+      if (node.rotation != null) {
+        transform = transform.mul(new Quaternion(node.rotation[0], node.rotation[1], node.rotation[2], node.rotation[3]).toMat4());
+      } 
+      if (node.scale != null) {
+        transform = transform.mul(Mat4.I().scaleThis(node.scale[0], node.scale[1], node.scale[2]));
+      }
+    }
     if (node.children != null) {
       node.children.forEach((childIdx) {
-        renderNode(gl, childIdx);
+        renderNode(gl, transform, childIdx);
       });
     }
     if (node.mesh != null) {
-      renderMesh(gl, node.mesh);
+      renderMesh(gl, transform, node.mesh);
     }
   }
 
@@ -292,7 +305,7 @@ class GlRenderModel {
     return WebGL.TRIANGLES;
   }
 
-  void renderMesh(webgl.RenderingContext gl, int meshIdx) {
+  void renderMesh(webgl.RenderingContext gl, Mat4 transform, int meshIdx) {
     model.root.meshes[meshIdx].primitives.forEach((primitive) {
       var posAccess = model.root.accessors[primitive.attributes.POSITION];
       if (primitive.indices != null) {
@@ -328,6 +341,7 @@ class GlRenderModel {
         int indexSize = sizeForWebGlType(indexType);
         int mode = webGlModeFromGltfPrimitiveMode(primitive.mode);
 
+        shader.loadUniforms(transform);
         gl.drawElements(
             mode,
             (indexBufView.byteLength / indexSize) as int,
@@ -347,7 +361,6 @@ class GlRenderModel {
         gl.deleteBuffer(buf);
       } else {
         throw "Draw gltf non-indices not implemented";
-
       }
     });
   }

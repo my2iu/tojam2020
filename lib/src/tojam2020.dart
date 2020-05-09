@@ -151,7 +151,7 @@ void _renderFrame(num time, XRFrame frame, webgl.RenderingContext gl, XRReferenc
 void _drawScene(webgl.RenderingContext gl, XRView view) {
   triProgram.bindProgram();
   Mat4 transformMatrix = Mat4.I();
-  transformMatrix.translateThis(2, 0, -3);
+  // transformMatrix.translateThis(2, 0, -3);
   transformMatrix = Mat4.fromWebXrFloat32Array(view.transform.inverse.matrix).mul(transformMatrix);
   transformMatrix = Mat4.fromWebXrFloat32Array(view.projectionMatrix).mul(transformMatrix);
   triProgram.loadUniforms(transformMatrix);
@@ -161,7 +161,7 @@ void _drawScene(webgl.RenderingContext gl, XRView view) {
 
   if (model != null) {
     shaders.GlRenderModel render = new shaders.GlRenderModel(model, triProgram);
-    render.renderScene(gl, 0);
+    render.renderScene(gl, transformMatrix.mul(Mat4.I().translateThis(2, 0, -3)), 0);
   }
 
   triProgram.unbindProgram();
