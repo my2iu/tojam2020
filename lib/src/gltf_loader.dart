@@ -8,11 +8,15 @@ import 'dart:web_gl' as webgl;
 import 'dart:web_gl' show WebGL;
 import 'dart:typed_data';
 
+import 'package:tojam2020/src/gl_shaders.dart';
+
 class GlRenderModel {
   Model model;
+  SimpleTriProgram shader;
 
-  GlRenderModel(Model model) {
+  GlRenderModel(Model model, SimpleTriProgram shader) {
     this.model = model;
+    this.shader = shader;
   }
 
   void renderScene(webgl.RenderingContext gl, int sceneIdx) {
@@ -38,7 +42,75 @@ class GlRenderModel {
     model.root.meshes[meshIdx].primitives.forEach((primitive) {
       var posAccess = model.root.accessors[primitive.attributes.POSITION];
       if (primitive.indices != null) {
-        
+        // Load in the accessor data to the GPU
+        webgl.Buffer buf = gl.createBuffer();
+        gl.bindBuffer(WebGL.ARRAY_BUFFER, buf);
+        gl.bufferData(WebGL.ARRAY_BUFFER, model.accessorData, WebGL.STATIC_DRAW);
+        webgl.Buffer indexBuf = gl.createBuffer();
+        gl.bindBuffer(WebGL.ELEMENT_ARRAY_BUFFER, indexBuf);
+        gl.bufferData(WebGL.ELEMENT_ARRAY_BUFFER, model.accessorData, WebGL.STATIC_DRAW);
+        gl.bindBuffer(WebGL.ELEMENT_ARRAY_BUFFER, indexBuf);
+
+        // Bind the position data
+        gl.bindBuffer(WebGL.ARRAY_BUFFER, buf);
+        BufferView bufView = model.root.bufferViews[posAccess.bufferView];
+        int size;
+        if (posAccess.type == "VEC3")
+          size = 3;
+        int type;
+        if (posAccess.componentType == 5126)
+          type = WebGL.FLOAT;
+        gl.vertexAttribPointer(shader.coordinatesVar, size, type, posAccess.normalized != null && posAccess.normalized, 
+          bufView.byteStride != null ? bufView.byteStride : 0, (posAccess.byteOffset != null ? posAccess.byteOffset : 0) + (bufView.byteOffset != null ? bufView.byteOffset : 0) + model.accessorDataOffset);
+
+        // Bind the indices
+        var indexAccess = model.root.accessors[primitive.indices];
+        var indexBufView = model.root.bufferViews[indexAccess.bufferView];
+        int indexType;
+        int indexSize;
+        if (indexAccess.componentType == 5121) {
+          indexType = WebGL.UNSIGNED_BYTE;
+          indexSize = 1;
+        } else if (indexAccess.componentType == 5123) {
+          indexType = WebGL.UNSIGNED_SHORT;
+          indexSize = 2;
+        } else if (indexAccess.componentType == 5125) {
+          indexType = WebGL.UNSIGNED_INT;
+          indexSize = 4;
+        }
+        int mode = WebGL.TRIANGLES;
+        if (primitive.mode != null) {
+          if (primitive.mode == 0)
+            mode = WebGL.POINTS;
+          else if (primitive.mode == 1)
+            mode = WebGL.LINES;
+          else if (primitive.mode == 2)
+            mode = WebGL.LINE_LOOP;
+          else if (primitive.mode == 3)
+            mode = WebGL.LINE_STRIP;
+          else if (primitive.mode == 4)
+            mode = WebGL.TRIANGLES;
+          else if (primitive.mode == 5)
+            mode = WebGL.TRIANGLE_STRIP;
+          else if (primitive.mode == 6)
+            mode = WebGL.TRIANGLE_FAN;
+        }
+
+        gl.drawElements(mode, (indexBufView.byteLength / indexSize) as int, indexType, 
+          (indexAccess.byteOffset != null ? indexAccess.byteOffset : 0) + (indexBufView.byteOffset != null ? indexBufView.byteOffset : 0) + model.accessorDataOffset);
+    // gl.vertexAttribPointer(colorsVar, 3, gl.FLOAT, false, 24, 12);
+
+    // Now we can tell WebGL to draw the triangles
+    //
+//    gl.activeTexture(gl.TEXTURE0);
+//    gl.bindTexture(gl.TEXTURE_2D, texture);
+//    gl.uniform1i(gl.getUniformLocation(glProgram, "uSampler"), 0);
+    // gl.drawArrays(WebGL.TRIANGLES, 0, buffer.numTriangles * 3);
+
+
+        // Unload the accessor data
+        gl.deleteBuffer(indexBuf);
+        gl.deleteBuffer(buf);
       } else {
 
       }
