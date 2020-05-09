@@ -59,6 +59,7 @@ void showStartButton(Element uiDiv) {
 
 Element _uiDiv;
 shaders.SimpleTriProgram triProgram;
+shaders.TexturedProgram textureProgram;
 
 void createExitVrButton(XRSession session) {
     _uiDiv.innerHtml = '';
@@ -80,7 +81,8 @@ void _startInline(String sessionType, String refType) {
     CanvasElement canvas = document.querySelector('canvas');
     webgl.RenderingContext gl =
         canvas.getContext('webgl', {'xrCompatible': true});
-    triProgram = shaders.SimpleTriProgram(gl);
+    triProgram = new shaders.SimpleTriProgram(gl);
+    textureProgram = new shaders.TexturedProgram(gl);
     session.updateRenderState(
         new XRRenderStateInit(baseLayer: new XRWebGLLayer(session, gl)));
     promiseToFuture<XRReferenceSpace>(session.requestReferenceSpace(refType))
@@ -152,8 +154,11 @@ void _renderFrame(num time, XRFrame frame, webgl.RenderingContext gl, XRReferenc
   }));
 }
 
+shaders.GlRenderModel modelRender;
+shaders.GlRenderModel floorRender;
+
 void _drawScene(webgl.RenderingContext gl, XRView view) {
-  triProgram.bindProgram();
+  shaders.useShader(triProgram);
   Mat4 transformMatrix = Mat4.I();
   // transformMatrix.translateThis(2, 0, -3);
   transformMatrix = Mat4.fromWebXrFloat32Array(view.transform.inverse.matrix).mul(transformMatrix);
@@ -164,13 +169,20 @@ void _drawScene(webgl.RenderingContext gl, XRView view) {
   buf.close();
 
   if (model != null) {
-    shaders.GlRenderModel render = new shaders.GlRenderModel(model, triProgram);
-    render.renderScene(gl, transformMatrix.mul(Mat4.I().translateThis(2, 0, -3)), 0);
+    if (modelRender == null) {
+      modelRender = new shaders.GlRenderModel(model, textureProgram);
+      modelRender.createBuffers(gl);
+    }
+    modelRender.renderScene(gl, transformMatrix.mul(Mat4.I().translateThis(2, 0, -3)), 0);
+    // TODO: Close the modelRender
   }
   if (floorModel != null) {
-    shaders.GlRenderModel render = new shaders.GlRenderModel(floorModel, triProgram);
-    render.renderScene(gl, transformMatrix.mul(Mat4.I().translateThis(-2, -2 - 1.5, 2)), 0);
+    if (floorRender == null) {
+      floorRender = new shaders.GlRenderModel(floorModel, textureProgram);
+      floorRender.createBuffers(gl);
+    }
+    floorRender.renderScene(gl, transformMatrix.mul(Mat4.I().translateThis(-2, -2 - 1.5, 2)), 0);
+    // TODO: Close the floorRender
   }
 
-  triProgram.unbindProgram();
 }

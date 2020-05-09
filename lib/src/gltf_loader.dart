@@ -1,16 +1,20 @@
 @JS()
 library gltf_reader;
 
+import 'dart:async';
 import 'dart:convert';
 import 'dart:html';
 import 'package:js/js.dart';
 import 'dart:typed_data';
+import 'dart:math' as Math;
 
 
 class Model {
   JsonRoot root;
   Uint8List binData;
   AccessorMemory accessorMemory;
+  List<Future<ImageElement>> images = new List();
+
 }
 
 Future<Model> loadGlb(String file) {
@@ -43,6 +47,41 @@ Future<Model> loadGlb(String file) {
     // model at one time.
     model.accessorMemory = AccessorMemory._subsetBufferForAccessors(model, model.root.accessors);
 
+    model.root.images.forEach((gltfImg) {
+      if (gltfImg.bufferView == null) {
+        model.images.add(null);
+        return;
+      }
+      BufferView bufView = model.root.bufferViews[gltfImg.bufferView];
+      if (bufView.buffer != 0) {
+        model.images.add(null);
+        return;
+      }
+      Buffer buf = model.root.buffers[bufView.buffer];
+      if (buf.uri != null) {
+        model.images.add(null);
+        return;
+      }
+      int bufStart = (bufView.byteOffset != null ? bufView.byteOffset : 0);
+      var imgData = model.binData.sublist(
+        bufStart,
+        bufStart + bufView.byteLength);
+      Blob blob = new Blob([imgData], gltfImg.mimeType);
+      ImageElement imgEl = document.createElement('img');
+      model.images.add(imgEl.onLoad.first.then((evt) {
+        // // Rescales to power of 2
+        // CanvasElement imgCanvas = document.createElement('canvas');
+        // int dimen = _smallestPowerOf2(Math.max(imgEl.width, imgEl.height));
+        // imgCanvas.width = dimen;
+        // imgCanvas.height = dimen;
+        // CanvasRenderingContext2D ctx = imgCanvas.getContext('2d');
+        // ctx.drawImage(imgEl, 0, 0);
+        // ctx.drawImage(imgEl, 0, dimen - imgEl.height);
+        // return imgCanvas;
+        return imgEl;
+      }));
+      imgEl.src = Url.createObjectUrl(blob);
+    });
     // TODO: Also separate out the texture data, then we can just dump the
     // original buffer entirely
 
@@ -50,7 +89,12 @@ Future<Model> loadGlb(String file) {
   });
 }
 
-
+int _smallestPowerOf2(int size) {
+  int pow2 = 1;
+  while (pow2 < size)
+    pow2 *= 2;
+  return pow2;
+}
 
 int _readChunk(Model model, ByteData view, int offset) {
   int chunkLength = view.getUint32(offset, Endian.little);
@@ -281,4 +325,21 @@ class PrimitiveAttributes {
   external int get COLOR_0;
   external int get JOINTS_0;
   external int get WEIGHTS_0;
+}
+
+@JS()
+@anonymous
+class PbrMetallicRoughness {
+  external List<double> get baseColorFactor;
+  external TextureReference get baseColorTexture;
+  external double get metallicFactor;
+  external double get roughnessFactor;
+  external TextureReference get metallicRoughnessTexture;
+}
+
+@JS()
+@anonymous
+class TextureReference {
+  external int get index;
+  external int get texCoord;
 }
