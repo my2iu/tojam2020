@@ -160,7 +160,7 @@ void _drawScene(webgl.RenderingContext gl, XRView view) {
   buf.close();
 
   if (model != null) {
-    gltf.GlRenderModel render = new gltf.GlRenderModel(model, triProgram);
+    shaders.GlRenderModel render = new shaders.GlRenderModel(model, triProgram);
     render.renderScene(gl, 0);
   }
 

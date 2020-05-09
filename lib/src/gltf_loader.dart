@@ -4,126 +4,13 @@ library gltf_reader;
 import 'dart:convert';
 import 'dart:html';
 import 'package:js/js.dart';
-import 'dart:web_gl' as webgl;
-import 'dart:web_gl' show WebGL;
 import 'dart:typed_data';
 
-import 'package:tojam2020/src/gl_shaders.dart';
-
-class GlRenderModel {
-  Model model;
-  SimpleTriProgram shader;
-
-  GlRenderModel(Model model, SimpleTriProgram shader) {
-    this.model = model;
-    this.shader = shader;
-  }
-
-  void renderScene(webgl.RenderingContext gl, int sceneIdx) {
-    if (model.root.scenes[sceneIdx].nodes != null) {
-      model.root.scenes[sceneIdx].nodes.forEach((nodeIdx) {
-        renderNode(gl, nodeIdx);
-      });
-    }
-  }
-  void renderNode(webgl.RenderingContext gl, int nodeIdx) {
-    Node node = model.root.nodes[nodeIdx];
-    if (node.children != null) {
-      node.children.forEach((childIdx) {
-        renderNode(gl, childIdx);
-      });
-    }
-    if (node.mesh != null) {
-      renderMesh(gl, node.mesh);
-    }
-  }
-
-  void renderMesh(webgl.RenderingContext gl, int meshIdx) {
-    model.root.meshes[meshIdx].primitives.forEach((primitive) {
-      var posAccess = model.root.accessors[primitive.attributes.POSITION];
-      if (primitive.indices != null) {
-        // Load in the accessor data to the GPU
-        webgl.Buffer buf = gl.createBuffer();
-        gl.bindBuffer(WebGL.ARRAY_BUFFER, buf);
-        gl.bufferData(WebGL.ARRAY_BUFFER, model.accessorData, WebGL.STATIC_DRAW);
-        webgl.Buffer indexBuf = gl.createBuffer();
-        gl.bindBuffer(WebGL.ELEMENT_ARRAY_BUFFER, indexBuf);
-        gl.bufferData(WebGL.ELEMENT_ARRAY_BUFFER, model.accessorData, WebGL.STATIC_DRAW);
-        gl.bindBuffer(WebGL.ELEMENT_ARRAY_BUFFER, indexBuf);
-
-        // Bind the position data
-        gl.bindBuffer(WebGL.ARRAY_BUFFER, buf);
-        BufferView bufView = model.root.bufferViews[posAccess.bufferView];
-        int size;
-        if (posAccess.type == "VEC3")
-          size = 3;
-        int type;
-        if (posAccess.componentType == 5126)
-          type = WebGL.FLOAT;
-        gl.vertexAttribPointer(shader.coordinatesVar, size, type, posAccess.normalized != null && posAccess.normalized, 
-          bufView.byteStride != null ? bufView.byteStride : 0, (posAccess.byteOffset != null ? posAccess.byteOffset : 0) + (bufView.byteOffset != null ? bufView.byteOffset : 0) + model.accessorDataOffset);
-
-        // Bind the indices
-        var indexAccess = model.root.accessors[primitive.indices];
-        var indexBufView = model.root.bufferViews[indexAccess.bufferView];
-        int indexType;
-        int indexSize;
-        if (indexAccess.componentType == 5121) {
-          indexType = WebGL.UNSIGNED_BYTE;
-          indexSize = 1;
-        } else if (indexAccess.componentType == 5123) {
-          indexType = WebGL.UNSIGNED_SHORT;
-          indexSize = 2;
-        } else if (indexAccess.componentType == 5125) {
-          indexType = WebGL.UNSIGNED_INT;
-          indexSize = 4;
-        }
-        int mode = WebGL.TRIANGLES;
-        if (primitive.mode != null) {
-          if (primitive.mode == 0)
-            mode = WebGL.POINTS;
-          else if (primitive.mode == 1)
-            mode = WebGL.LINES;
-          else if (primitive.mode == 2)
-            mode = WebGL.LINE_LOOP;
-          else if (primitive.mode == 3)
-            mode = WebGL.LINE_STRIP;
-          else if (primitive.mode == 4)
-            mode = WebGL.TRIANGLES;
-          else if (primitive.mode == 5)
-            mode = WebGL.TRIANGLE_STRIP;
-          else if (primitive.mode == 6)
-            mode = WebGL.TRIANGLE_FAN;
-        }
-
-        gl.drawElements(mode, (indexBufView.byteLength / indexSize) as int, indexType, 
-          (indexAccess.byteOffset != null ? indexAccess.byteOffset : 0) + (indexBufView.byteOffset != null ? indexBufView.byteOffset : 0) + model.accessorDataOffset);
-    // gl.vertexAttribPointer(colorsVar, 3, gl.FLOAT, false, 24, 12);
-
-    // Now we can tell WebGL to draw the triangles
-    //
-//    gl.activeTexture(gl.TEXTURE0);
-//    gl.bindTexture(gl.TEXTURE_2D, texture);
-//    gl.uniform1i(gl.getUniformLocation(glProgram, "uSampler"), 0);
-    // gl.drawArrays(WebGL.TRIANGLES, 0, buffer.numTriangles * 3);
-
-
-        // Unload the accessor data
-        gl.deleteBuffer(indexBuf);
-        gl.deleteBuffer(buf);
-      } else {
-
-      }
-    });
-  }
-
-}
 
 class Model {
   JsonRoot root;
   Uint8List binData;
-  Uint8List accessorData;
-  int accessorDataOffset;
+  AccessorMemory accessorMemory;
 }
 
 Future<Model> loadGlb(String file) {
@@ -152,30 +39,18 @@ Future<Model> loadGlb(String file) {
       offset = _readChunk(model, view, offset);
     }
 
-    // The accessor data and image data is all mixed together, but
-    // we don't want to upload the image data to the GPU. So we'll
-    // try to figure out which part of the buffer contains only
-    // accessor data. This won't work if accessor data is intermixed
-    // with image data or stored in different files etc.
-    int accessorDataStart = -1, accessorDataEnd = -1;
-    model.root.accessors.forEach((accessor) {
-      if (accessor.bufferView == null) return;
-      var bufView = model.root.bufferViews[accessor.bufferView];
-      if (bufView.buffer != 0) return;
-      if (model.root.buffers[0].uri != null) return;
-      int byteOffset = bufView.byteOffset != null ? bufView.byteOffset : 0;
-      if (accessorDataStart == -1 || byteOffset < accessorDataStart) {
-        accessorDataStart = byteOffset;
-      }
-      if (accessorDataEnd == -1 || byteOffset + bufView.byteLength > accessorDataEnd) {
-        accessorDataEnd = byteOffset + bufView.byteLength;
-      }
-      model.accessorData = model.binData.sublist(accessorDataStart, accessorDataEnd);
-      model.accessorDataOffset = -accessorDataStart;
-    });
+    // It would make more sense to do this per mesh and not for the whole
+    // model at one time.
+    model.accessorMemory = AccessorMemory._subsetBufferForAccessors(model, model.root.accessors);
+
+    // TODO: Also separate out the texture data, then we can just dump the
+    // original buffer entirely
+
     return model;
   });
 }
+
+
 
 int _readChunk(Model model, ByteData view, int offset) {
   int chunkLength = view.getUint32(offset, Endian.little);
@@ -194,6 +69,46 @@ int _readChunk(Model model, ByteData view, int offset) {
   }
   offset += chunkLength;
   return offset;
+}
+
+
+class AccessorMemory {
+  Uint8List data;
+  int pointerShift;
+  AccessorMemory(this.data, this.pointerShift);
+  int offsetForAccessor(Model model, Accessor accessor) {
+    BufferView bufView = model.root.bufferViews[accessor.bufferView];
+    return (accessor.byteOffset != null ? accessor.byteOffset : 0) 
+    + (bufView.byteOffset != null ? bufView.byteOffset : 0) 
+    + pointerShift;
+  }
+  // For the given accessors, try to figure out which contiguous block of memory 
+  // is used for them.
+  // TODO: We can go even smarter than this and actually move memory around and check
+  // for overlaps and stuff
+  static AccessorMemory _subsetBufferForAccessors(Model model, List<Accessor> accessors) {
+    // The accessor data and image data is all mixed together, but
+    // we don't want to upload the image data to the GPU. So we'll
+    // try to figure out which part of the buffer contains only
+    // accessor data. This won't work if accessor data is intermixed
+    // with image data or stored in different files etc.
+    int accessorDataStart = -1, accessorDataEnd = -1;
+    accessors.forEach((accessor) {
+      if (accessor.bufferView == null) return;
+      var bufView = model.root.bufferViews[accessor.bufferView];
+      if (bufView.buffer != 0) return;
+      if (model.root.buffers[0].uri != null) return;
+      int byteOffset = bufView.byteOffset != null ? bufView.byteOffset : 0;
+      if (accessorDataStart == -1 || byteOffset < accessorDataStart) {
+        accessorDataStart = byteOffset;
+      }
+      if (accessorDataEnd == -1 || byteOffset + bufView.byteLength > accessorDataEnd) {
+        accessorDataEnd = byteOffset + bufView.byteLength;
+      }
+    });
+    return AccessorMemory(model.binData.sublist(accessorDataStart, accessorDataEnd), -accessorDataStart);
+  }
+
 }
 
 
