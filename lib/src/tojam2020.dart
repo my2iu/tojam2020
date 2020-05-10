@@ -236,7 +236,7 @@ void _drawScene(webgl.RenderingContext gl, XRView view) {
       blockRender = new shaders.GlRenderModel(blockModel, textureProgram);
       blockRender.createBuffers(gl);
     }
-    drawRope(blockRender, gl, transformMatrix, 2, 2, 2);
+    drawRope(blockRender, gl, transformMatrix, -2, -2, -1);
     // TODO: Close the modelRender
   }
 }

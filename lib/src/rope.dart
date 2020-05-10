@@ -13,14 +13,19 @@ class _LineSegment {
   num x1, y1, x2, y2;
 }
 
+Quaternion ropeRotation = Quaternion.I();
+
 void drawRope(shaders.GlRenderModel modelRender, webgl.RenderingContext gl,
     Mat4 transformMatrix, double x, double y, double z) {
+
+  ropeRotation = Quaternion.I().setFromAxisRad(1, 0, 0, 0.01).mul(ropeRotation);
 
   // Calculate the rope as a bunch of lines making a parabola
   num ropeExtent = 1;
   for (num ropeX = -ropeExtent; ropeX < ropeExtent; ropeX += 0.1) {
     num ropeY = ropeX * ropeX - ropeExtent * ropeExtent;
-    modelRender.renderScene(gl, transformMatrix.mul(Mat4.I().translateThis(x + ropeX, y + ropeY, z)), 0);
+    var newRopePos = ropeRotation.toMat4().applyToList4([ropeX, ropeY, 0.0, 1.0]);
+    modelRender.renderScene(gl, transformMatrix.mul(Mat4.I().translateThis(x + newRopePos[0], y + newRopePos[1], z + newRopePos[2])), 0);
   }
 
 

@@ -138,6 +138,17 @@ class Mat4
     _googTranslate(this.data, x, y, z);
     return this;
 }
+
+List<double> applyToList4(List<double> vec) {
+  List<double> toReturn = new List(4);
+  for (int row = 0; row < 4; row++) {
+    toReturn[row] = 0;
+    for (int n = 0; n < 4; n++) {
+      toReturn[row] += data[row * 4 + n] * vec[n];
+    }
+  }
+  return toReturn;
+}
 //Mat4.prototype.rotateX = function(angle)
 //{
 //    return this.clone().rotateThis(angle, 1, 0, 0);
