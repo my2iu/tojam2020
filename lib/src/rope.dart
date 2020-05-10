@@ -31,9 +31,11 @@ void drawRope(shaders.GlRenderModel modelRender, webgl.RenderingContext gl,
   for (num ropeX = -ropeExtent; ropeX < ropeExtent; ropeX += ropeStep) {
     num ropeY = ropeStretchScale * (ropeX * ropeX - ropeExtent * ropeExtent);
     var newRopePos = ropeRotation.toMat4().applyToList4([ropeX, ropeY, 0.0, 1.0]);
-    // if (newRopePos[1] < 0) newRopePos[1] = 3;
-    if (newRopePos[1] < lowest) lowest =newRopePos[1];
-    modelRender.renderScene(gl, transformMatrix.mul(Mat4.I().translateThis(x + newRopePos[0], y + newRopePos[1], z + newRopePos[2])), 0);
+    modelRender.renderScene(gl, transformMatrix.mul(
+      Mat4.I().translateThis(x + newRopePos[0], y + newRopePos[1], z + newRopePos[2])
+      .translateThis(-1.95, -2.05, 1.75) // Move center of block to origin. Coordinate range is (1.9->2, 2->2.1, -1.8->-1.7)
+
+      ), 0);
   }
   window.console.log(lowest.toString() + " " + y.toString());
 
