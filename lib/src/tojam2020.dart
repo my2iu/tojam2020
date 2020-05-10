@@ -74,6 +74,8 @@ StreamSubscription keyListener;
 Element _uiDiv;
 shaders.SimpleTriProgram triProgram;
 shaders.TexturedProgram textureProgram;
+XRRigidTransform startSelectTransform;
+XRInputSource startSelectInputSource;
 
 void createExitVrButton(XRSession session) {
     _uiDiv.innerHtml = '';
@@ -95,7 +97,7 @@ void _startInline(String sessionType, String refType) {
   lastTime = null;
   promiseToFuture<XRSession>(navigatorXr.requestSession(sessionType))
       .then((session) {
-        createExitVrButton(session);
+    createExitVrButton(session);
     keyListener = document.onKeyDown.listen((evt) {
       //window.console.log(evt.keyCode);
       switch (evt.keyCode) {
@@ -131,6 +133,33 @@ void _startInline(String sessionType, String refType) {
         new XRRenderStateInit(baseLayer: new XRWebGLLayer(session, gl)));
     promiseToFuture<XRReferenceSpace>(session.requestReferenceSpace(refType))
         .then((refSpace) {
+
+      session.addEventListener('squeezestart', allowInterop((dynamic evt) {
+        // My WMR headset doesn't seem to have squeeze events
+      }));
+      session.addEventListener('selectstart', allowInterop((dynamic evt) {
+        XRInputSourceEvent event = evt as XRInputSourceEvent;
+        if (event.inputSource.gripSpace != null) {
+          startSelectTransform = 
+            event.frame.getPose(event.inputSource.gripSpace, refSpace).transform;
+          startSelectInputSource = event.inputSource;
+        }
+      }));
+      session.addEventListener('select', allowInterop((dynamic evt) {
+        XRInputSourceEvent event = evt as XRInputSourceEvent;
+        var currentPose = event.frame.getPose(event.inputSource.gripSpace, refSpace).transform;
+        basePosAdjust[0] += currentPose.position.x - startSelectTransform.position.x;
+        basePosAdjust[1] += currentPose.position.y - startSelectTransform.position.y;
+        basePosAdjust[2] += currentPose.position.z - startSelectTransform.position.z;
+        startSelectTransform = null;
+        startSelectInputSource = null;
+      }));
+      session.addEventListener('selectend', allowInterop((dynamic evt) {
+        startSelectTransform = null;
+        startSelectInputSource = null;
+        XRInputSourceEvent event = evt as XRInputSourceEvent;
+      }));
+
       session.requestAnimationFrame(allowInterop((time, frame) {
         _renderFrame(time, frame, gl, refSpace);
       }));
@@ -152,6 +181,15 @@ void _renderFrame(num time, XRFrame frame, webgl.RenderingContext gl, XRReferenc
   XRReferenceSpace refSpace = baseRefSpace
     .getOffsetReferenceSpace(new XRRigidTransform(new DOMPointInit(), new DOMPointInit(x: baseAngleAdjust.x, y: baseAngleAdjust.y, z: baseAngleAdjust.z, w: baseAngleAdjust.w)))
     .getOffsetReferenceSpace(new XRRigidTransform(new DOMPointInit(x: basePosAdjust[0], y: basePosAdjust[1], z: basePosAdjust[2])));
+
+  // Handle dragging of the whole area
+  if (startSelectTransform != null && startSelectInputSource != null) {
+    var currentPose = frame.getPose(startSelectInputSource.gripSpace, baseRefSpace).transform;
+    refSpace = refSpace.getOffsetReferenceSpace(new XRRigidTransform(new DOMPointInit(x: currentPose.position.x - startSelectTransform.position.x,
+        y: currentPose.position.y - startSelectTransform.position.y,
+        z: currentPose.position.z - startSelectTransform.position.z), new DOMPointInit()));
+  }
+
 
   var pose = frame.getViewerPose(refSpace);
   // When VR is first started, the pose will be null until it figures out a position
