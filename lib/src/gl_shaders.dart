@@ -185,8 +185,10 @@ class TrianglesArrayBuffer {
 class TexturedProgram extends GLGenericProgram {
   webgl.UniformLocation uniTransform;
   webgl.UniformLocation uniSampler;
+  webgl.UniformLocation uniNormalTransform;
   int coordinatesVar;
   int textureCoordinatesVar;
+  int normalVar;
 
   void loadUniforms(Mat4 transform) {
     Float32List matrix = new Float32List(16);
@@ -200,30 +202,40 @@ class TexturedProgram extends GLGenericProgram {
     String vertCode = """
       attribute vec3 coordinates;
       attribute vec2 texCoords;
+      attribute vec3 normals;
 //      attribute vec3 colours;
 
       varying lowp vec3 vColours;
       varying highp vec2 vTextureCoords;
+      varying highp vec3 vNormal;
       //varying lowp vec4 uColor;
 
       uniform mat4 transformMatrix;  
+      uniform mat4 normalTransformMatrix;
 
       void main(void) {
         vec4 viewPos = transformMatrix * vec4(coordinates, 1.0);
         gl_Position = viewPos;
         vColours = vec3(1.0, 0.0, 0.0);
         vTextureCoords = texCoords;
+        vNormal = normalTransformMatrix * normals;
       }""";
     String fragCode = """
       varying lowp vec3 vColours;
       varying highp vec2 vTextureCoords;
+      varying highp vec3 vNormal;
 
       uniform sampler2D uSampler;
 
       void main(void) {
         //gl_FragColor = vec4(vColours, 1.0);
+        highp vec3 normal = normalize(vNormal);
+        highp vec3 reverseLightDirection = normalize(vec3(-0.2, 1.0, -1.0));
+        highp float light = dot(normal, reverseLightDirection);
+        highp vec3 directionalLightColor = vec3(0.4, 0.4, 0.4) * light;
+        highp vec3 ambientLightColor = vec3(0.6, 0.6, 0.6);
            gl_FragColor = texture2D(uSampler, vTextureCoords);
-
+          gl_FragColor.rgb = (directionalLightColor + ambientLightColor) * gl_FragColor.rgb;
       }
     """;
     glProgram = GLGenericProgram.createShaderProgram(gl, vertCode, fragCode);
@@ -231,9 +243,11 @@ class TexturedProgram extends GLGenericProgram {
 
     uniTransform = gl.getUniformLocation(glProgram, "transformMatrix");
     uniSampler = gl.getUniformLocation(glProgram, "uSampler");
+    uniNormalTransform = gl.getUniformLocation(glProgram, "normalTransformMatrix");
     loadUniforms(Mat4.I());
     coordinatesVar = gl.getAttribLocation(glProgram, "coordinates");
     textureCoordinatesVar = gl.getAttribLocation(glProgram, "texCoords");
+    normalVar = gl.getAttribLocation(glProgram, "normals");
 
     // colorsVar = gl.getAttribLocation(glProgram, "colours");
   }
@@ -245,12 +259,14 @@ class TexturedProgram extends GLGenericProgram {
 
     gl.enableVertexAttribArray(coordinatesVar);
     gl.enableVertexAttribArray(textureCoordinatesVar);
+    gl.enableVertexAttribArray(normalVar);
     // gl.enableVertexAttribArray(colorsVar);
   }
 
   void unbindProgram() {
     gl.disableVertexAttribArray(coordinatesVar);
     gl.disableVertexAttribArray(textureCoordinatesVar);
+    gl.disableVertexAttribArray(normalVar);
     // gl.disableVertexAttribArray(colorsVar);
   }
 
@@ -269,6 +285,8 @@ class TexturedProgram extends GLGenericProgram {
     GlRenderModel.bindGltfAccessor(gl, posAccess, coordinatesVar, model);
     var texAccess = model.root.accessors[primitive.attributes.TEXCOORD_0];
     GlRenderModel.bindGltfAccessor(gl, texAccess, textureCoordinatesVar, model);
+    var normalAccess = model.root.accessors[primitive.attributes.NORMAL];
+    GlRenderModel.bindGltfAccessor(gl, normalAccess, normalVar, model);
 
     loadUniforms(transform);
     gl.uniform1i(uniSampler, 0);
@@ -337,7 +355,6 @@ class GlRenderModel {
         // gl.texImage2D(WebGL.TEXTURE_2D, 0, WebGL.RGBA, 2, 2, 0, WebGL.RGBA, WebGL.UNSIGNED_BYTE,
         //   Uint8List.fromList([255, 0, 255, 255, 0, 0, 255, 255, 255, 255, 0, 255, 0, 0, 255, 255]));
         imageTextures[imgTextureIdx] = texture;
-        document.body.append(imgEl);
       });
 
     }
