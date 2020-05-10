@@ -25,7 +25,7 @@ void loadResources() {
   gltf.loadGlb('resources/ming_floor.glb').then((gltfmodel) {
     floorModel = gltfmodel;
   });
-  gltf.loadGlb('resources/singleblock2.glb').then((gltfmodel) {
+  gltf.loadGlb('resources/singleblock.glb').then((gltfmodel) {
     blockModel = gltfmodel;
   });
 
