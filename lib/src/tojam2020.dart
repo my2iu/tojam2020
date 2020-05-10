@@ -47,9 +47,9 @@ void showStartButton(Element uiDiv) {
   promiseToFuture<bool>(navigatorXr.isSessionSupported("immersive-vr"))
       .then((supported) {
     if (!supported) return;
-    uiDiv.appendHtml('<a href="#" class="startVr"><div>Start VR</div></a>');
+    uiDiv.appendHtml('<a href="#" class="startVr"><div><span>Start VR</span></div></a>');
     uiDiv.querySelector('.startVr').addEventListener('click', (event) {
-      uiDiv.appendText('clicked');
+//      uiDiv.appendText('clicked');
       _startInline("immersive-vr", "local");
       event.preventDefault();
     });
@@ -60,10 +60,10 @@ void showStartButton(Element uiDiv) {
       .then((supported) {
     if (!supported) return;
     uiDiv.appendHtml(
-        '<a href="#" class="startInline"><div>Start Inline</div></a>');
+        '<a href="#" class="startInline"><div><span>Start Inline</span></div></a>');
     uiDiv.querySelector('.startInline').addEventListener('click',
         (event) {
-      uiDiv.appendText('clicked');
+//      uiDiv.appendText('clicked');
       _startInline("inline", "viewer");
       event.preventDefault();
     });
@@ -77,7 +77,7 @@ shaders.TexturedProgram textureProgram;
 
 void createExitVrButton(XRSession session) {
     _uiDiv.innerHtml = '';
-    _uiDiv.appendHtml('<a href="#" class="exitVR"><div>Exit VR</div></a>');
+    _uiDiv.appendHtml('<a href="#" class="exitVR"><div><span>Exit VR</span></div></a>');
     _uiDiv.querySelector('.exitVR').addEventListener('click', (evt) {
       session.end();
       if (keyListener != null) {
