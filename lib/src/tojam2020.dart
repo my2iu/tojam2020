@@ -215,15 +215,15 @@ shaders.GlRenderModel floorRender;
 shaders.GlRenderModel blockRender;
 
 void _drawScene(webgl.RenderingContext gl, XRView view) {
-  shaders.useShader(triProgram);
   Mat4 transformMatrix = Mat4.I();
   // transformMatrix.translateThis(2, 0, -3);
   transformMatrix = Mat4.fromWebXrFloat32Array(view.transform.inverse.matrix).mul(transformMatrix);
   transformMatrix = Mat4.fromWebXrFloat32Array(view.projectionMatrix).mul(transformMatrix);
-  triProgram.loadUniforms(transformMatrix);
-  shaders.TrianglesArrayBuffer buf = triProgram.createRenderableBuffer();
-  triProgram.draw(buf);
-  buf.close();
+  // shaders.useShader(triProgram);
+  // triProgram.loadUniforms(transformMatrix);
+  // shaders.TrianglesArrayBuffer buf = triProgram.createRenderableBuffer();
+  // triProgram.draw(buf);
+  // buf.close();
 
   // if (model != null) {
   //   if (modelRender == null) {
