@@ -15,7 +15,7 @@ gltf.Model floorModel;
 gltf.Model blockModel;
 
 Quaternion baseAngleAdjust = Quaternion.I();
-List<double> basePosAdjust = [0.0, 0.0, 0.0];
+List<double> basePosAdjust = [0.0, -0.5, 0.0];
 
 void loadResources() {
     // Start loading some resources immediately
@@ -28,6 +28,7 @@ void loadResources() {
   });
   gltf.loadGlb('resources/singleblock.glb').then((gltfmodel) {
     blockModel = gltfmodel;
+    // Coordinate range is (1.9->2, 2->2.1, -1.8->-1.7)
   });
 
 }
@@ -229,10 +230,9 @@ void _drawScene(webgl.RenderingContext gl, XRView view) {
       floorRender.createBuffers(gl);
     }
     floorRender.renderScene(gl, transformMatrix.mul(
-      Mat4.I().translateThis(0, -0.5, 0)
+      Mat4.I()
       .scaleThis(2, 2, 2)
       .translateThis(-2, -2.1, 2)  // drop origin to floor and middle. Coordinate range is (0->4, 2->2.4, -4->0)
-
       ), 0);
     // TODO: Close the floorRender
   }
@@ -242,7 +242,7 @@ void _drawScene(webgl.RenderingContext gl, XRView view) {
       blockRender = new shaders.GlRenderModel(blockModel, textureProgram);
       blockRender.createBuffers(gl);
     }
-    drawRope(blockRender, gl, transformMatrix, -2, -2, -1);
+    drawRope(blockRender, gl, transformMatrix, -1, 1, -1);
     // TODO: Close the modelRender
   }
 }
