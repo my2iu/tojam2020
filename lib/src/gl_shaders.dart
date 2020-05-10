@@ -389,7 +389,7 @@ class GlRenderModel {
   void renderNode(webgl.RenderingContext gl, Mat4 transform, int nodeIdx) {
     gltf.Node node = model.root.nodes[nodeIdx];
     if (node.matrix != null) {
-      transform = transform.mul(new Mat4(node.matrix));
+      transform = transform.mul(Mat4.fromList(node.matrix));
     } else {
       if (node.translation != null) {
         transform = transform.mul(Mat4.I().translateThis(node.translation[0], node.translation[1], node.translation[2]));

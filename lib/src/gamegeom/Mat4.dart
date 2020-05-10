@@ -17,6 +17,12 @@ class Mat4
     this.data = data;
   }
 
+  Mat4.fromList(List list) {
+    data = new List(16);
+    for (int n = 0; n < 16; n++)
+      data[n] = list[n];
+  }
+
   Mat4 transpose()
   {
       List<double> a = this.data;

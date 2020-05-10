@@ -8,9 +8,11 @@ import 'package:tojam2020/src/gl_shaders.dart' as shaders;
 import 'package:tojam2020/gamegeom.dart';
 import 'package:tojam2020/src/gltf_loader.dart' as gltf;
 import 'dart:math' as Math;
+import 'rope.dart';
 
 gltf.Model model;
 gltf.Model floorModel;
+gltf.Model blockModel;
 
 Quaternion baseAngleAdjust = Quaternion.I();
 List<double> basePosAdjust = [0.0, 0.0, 0.0];
@@ -22,6 +24,9 @@ void loadResources() {
   });
   gltf.loadGlb('resources/ming_floor.glb').then((gltfmodel) {
     floorModel = gltfmodel;
+  });
+  gltf.loadGlb('resources/singleblock2.glb').then((gltfmodel) {
+    blockModel = gltfmodel;
   });
 
 }
@@ -87,7 +92,7 @@ void _startInline(String sessionType, String refType) {
       .then((session) {
         createExitVrButton(session);
     keyListener = document.onKeyDown.listen((evt) {
-      window.console.log(evt.keyCode);
+      //window.console.log(evt.keyCode);
       switch (evt.keyCode) {
         case 65: // A
           basePosAdjust[0] += 0.2;
@@ -196,6 +201,7 @@ void _renderFrame(num time, XRFrame frame, webgl.RenderingContext gl, XRReferenc
 
 shaders.GlRenderModel modelRender;
 shaders.GlRenderModel floorRender;
+shaders.GlRenderModel blockRender;
 
 void _drawScene(webgl.RenderingContext gl, XRView view) {
   shaders.useShader(triProgram);
@@ -225,4 +231,13 @@ void _drawScene(webgl.RenderingContext gl, XRView view) {
     // TODO: Close the floorRender
   }
 
+  if (blockModel != null) {
+    if (blockRender == null) {
+      blockRender = new shaders.GlRenderModel(blockModel, textureProgram);
+      blockRender.createBuffers(gl);
+    }
+    drawRope(blockRender, gl, transformMatrix, 2, 2, 2);
+    // TODO: Close the modelRender
+  }
 }
+
