@@ -15,18 +15,27 @@ class _LineSegment {
 
 Quaternion ropeRotation = Quaternion.I();
 
+void rotateRope(num deltaTime) {
+  ropeRotation = Quaternion.I().setFromAxisRad(1, 0, 0, (3.0 / 2.8 * Math.pi) * deltaTime / 1000).mul(ropeRotation);
+}
+
 void drawRope(shaders.GlRenderModel modelRender, webgl.RenderingContext gl,
     Mat4 transformMatrix, double x, double y, double z) {
 
-  ropeRotation = Quaternion.I().setFromAxisRad(1, 0, 0, 0.01).mul(ropeRotation);
 
   // Calculate the rope as a bunch of lines making a parabola
   num ropeExtent = 1;
-  for (num ropeX = -ropeExtent; ropeX < ropeExtent; ropeX += 0.1) {
-    num ropeY = ropeX * ropeX - ropeExtent * ropeExtent;
+  num ropeStretchScale = 1.25;
+  num ropeStep = 0.075;
+  num lowest = 3000;
+  for (num ropeX = -ropeExtent; ropeX < ropeExtent; ropeX += ropeStep) {
+    num ropeY = ropeStretchScale * (ropeX * ropeX - ropeExtent * ropeExtent);
     var newRopePos = ropeRotation.toMat4().applyToList4([ropeX, ropeY, 0.0, 1.0]);
+    // if (newRopePos[1] < 0) newRopePos[1] = 3;
+    if (newRopePos[1] < lowest) lowest =newRopePos[1];
     modelRender.renderScene(gl, transformMatrix.mul(Mat4.I().translateThis(x + newRopePos[0], y + newRopePos[1], z + newRopePos[2])), 0);
   }
+  window.console.log(lowest.toString() + " " + y.toString());
 
 
 }

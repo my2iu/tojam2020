@@ -16,6 +16,7 @@ gltf.Model blockModel;
 
 Quaternion baseAngleAdjust = Quaternion.I();
 List<double> basePosAdjust = [0.0, 0.0, 0.0];
+num lastTime = null;
 
 void loadResources() {
     // Start loading some resources immediately
@@ -89,6 +90,7 @@ void createExitVrButton(XRSession session) {
 }
 
 void _startInline(String sessionType, String refType) {
+  lastTime = null;
   promiseToFuture<XRSession>(navigatorXr.requestSession(sessionType))
       .then((session) {
         createExitVrButton(session);
@@ -136,6 +138,12 @@ void _startInline(String sessionType, String refType) {
 
 void _renderFrame(num time, XRFrame frame, webgl.RenderingContext gl, XRReferenceSpace baseRefSpace) {
   XRSession session = frame.session;
+
+  if (lastTime == null)
+    lastTime = time;
+  num deltaTime = time - lastTime;
+  lastTime = time;
+  rotateRope(deltaTime);
 
   // I think I'm calling this incorrectly because the rotation seems to be
   // happening after the translation, but the spec says that that shouldn't happen.
@@ -232,7 +240,6 @@ void _drawScene(webgl.RenderingContext gl, XRView view) {
       Mat4.I().translateThis(0, -0.5, 0)
       .scaleThis(2, 2, 2)
       .translateThis(-2, -2.1, 2)  // drop origin to floor and middle. Coordinate range is (0->4, 2->2.4, -4->0)
-
       ), 0);
     // TODO: Close the floorRender
   }
@@ -242,7 +249,7 @@ void _drawScene(webgl.RenderingContext gl, XRView view) {
       blockRender = new shaders.GlRenderModel(blockModel, textureProgram);
       blockRender.createBuffers(gl);
     }
-    drawRope(blockRender, gl, transformMatrix, -2, -2, -1);
+    drawRope(blockRender, gl, transformMatrix, -2, -1.75, -1);
     // TODO: Close the modelRender
   }
 }
