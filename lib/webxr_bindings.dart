@@ -71,7 +71,7 @@ class XRSpace {
 
 @JS("XRReferenceSpace")
 class XRReferenceSpace {
-
+  external XRReferenceSpace getOffsetReferenceSpace(XRRigidTransform offset);
 }
 
 @JS("XRBoundedReferenceSpace")
@@ -95,10 +95,21 @@ class XRViewport {
 
 @JS("XRRigidTransform")
 class XRRigidTransform {
+  external XRRigidTransform([DOMPointInit position, DOMPointInit orientation]);
   external DomPointReadOnly get position;
   external DomPointReadOnly get orientation;
   external Float32List get matrix;
   external XRRigidTransform get inverse;
+}
+
+@JS()
+@anonymous
+class DOMPointInit {
+  external num get x;
+  external num get y;
+  external num get z;
+  external num get w;
+  external factory DOMPointInit({num x, num y, num z, num w});
 }
 
 @JS("XRPose")

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:html';
 import 'package:tojam2020/webxr_bindings.dart';
 import 'package:js/js.dart';
@@ -10,6 +11,9 @@ import 'dart:math' as Math;
 
 gltf.Model model;
 gltf.Model floorModel;
+
+Quaternion baseAngleAdjust = Quaternion.I();
+List<double> basePosAdjust = [0.0, 0.0, 0.0];
 
 void loadResources() {
     // Start loading some resources immediately
@@ -57,6 +61,7 @@ void showStartButton(Element uiDiv) {
   });
 }
 
+StreamSubscription keyListener;
 Element _uiDiv;
 shaders.SimpleTriProgram triProgram;
 shaders.TexturedProgram textureProgram;
@@ -66,6 +71,10 @@ void createExitVrButton(XRSession session) {
     _uiDiv.appendHtml('<a href="#" class="exitVR"><div>Exit VR</div></a>');
     _uiDiv.querySelector('.exitVR').addEventListener('click', (evt) {
       session.end();
+      if (keyListener != null) {
+        keyListener.cancel();
+        keyListener = null;
+      }
       _uiDiv.innerHtml = '';
       showStartButton(_uiDiv);
       evt.preventDefault();
@@ -77,7 +86,32 @@ void _startInline(String sessionType, String refType) {
   promiseToFuture<XRSession>(navigatorXr.requestSession(sessionType))
       .then((session) {
         createExitVrButton(session);
-
+    keyListener = document.onKeyDown.listen((evt) {
+      window.console.log(evt.keyCode);
+      switch (evt.keyCode) {
+        case 65: // A
+          basePosAdjust[0] += 0.2;
+          break;
+        case 83: // S
+          basePosAdjust[2] -= 0.2;
+          break;
+        case 68: // D
+          basePosAdjust[0] -= 0.2;
+          break;
+        case 87: // W
+          basePosAdjust[2] += 0.2;
+          break;
+        case 81: // Q
+          baseAngleAdjust.mul(Quaternion.I().setFromAxisRad(0, 1, 0, -0.05));
+          break;
+        case 69: // E
+          baseAngleAdjust.mul(Quaternion.I().setFromAxisRad(0, 1, 0, 0.05));
+          break;
+        default:
+          return;
+      }
+      evt.preventDefault();
+    });
     CanvasElement canvas = document.querySelector('canvas');
     webgl.RenderingContext gl =
         canvas.getContext('webgl', {'xrCompatible': true});
@@ -94,8 +128,14 @@ void _startInline(String sessionType, String refType) {
   });
 }
 
-void _renderFrame(num time, XRFrame frame, webgl.RenderingContext gl, XRReferenceSpace refSpace) {
+void _renderFrame(num time, XRFrame frame, webgl.RenderingContext gl, XRReferenceSpace baseRefSpace) {
   XRSession session = frame.session;
+
+  // I think I'm calling this incorrectly because the rotation seems to be
+  // happening after the translation, but the spec says that that shouldn't happen.
+  XRReferenceSpace refSpace = baseRefSpace
+    .getOffsetReferenceSpace(new XRRigidTransform(new DOMPointInit(), new DOMPointInit(x: baseAngleAdjust.x, y: baseAngleAdjust.y, z: baseAngleAdjust.z, w: baseAngleAdjust.w)))
+    .getOffsetReferenceSpace(new XRRigidTransform(new DOMPointInit(x: basePosAdjust[0], y: basePosAdjust[1], z: basePosAdjust[2])));
 
   var pose = frame.getViewerPose(refSpace);
   // When VR is first started, the pose will be null until it figures out a position
@@ -150,7 +190,7 @@ void _renderFrame(num time, XRFrame frame, webgl.RenderingContext gl, XRReferenc
 
   // Render the next frame too
   session.requestAnimationFrame(allowInterop((time, frame) {
-    _renderFrame(time, frame, gl, refSpace);
+    _renderFrame(time, frame, gl, baseRefSpace);
   }));
 }
 

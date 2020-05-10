@@ -190,11 +190,13 @@ class TexturedProgram extends GLGenericProgram {
   int textureCoordinatesVar;
   int normalVar;
 
-  void loadUniforms(Mat4 transform) {
+  void loadUniforms(Mat4 transform, Mat4 normalTransform) {
     Float32List matrix = new Float32List(16);
     for (int n = 0; n < 16; n++) matrix[n] = (transform.data[n]);
     gl.useProgram(glProgram);
     gl.uniformMatrix4fv(uniTransform, false, matrix);
+    for (int n = 0; n < 16; n++) matrix[n] = (normalTransform.data[n]);
+    gl.uniformMatrix4fv(uniNormalTransform, false, matrix);
   }
 
   TexturedProgram(webgl.RenderingContext gl) {
@@ -218,7 +220,7 @@ class TexturedProgram extends GLGenericProgram {
         gl_Position = viewPos;
         vColours = vec3(1.0, 0.0, 0.0);
         vTextureCoords = texCoords;
-        vNormal = normalTransformMatrix * normals;
+        vNormal = (normalTransformMatrix * vec4(normals, 0.0)).xyz;
       }""";
     String fragCode = """
       varying lowp vec3 vColours;
@@ -244,7 +246,7 @@ class TexturedProgram extends GLGenericProgram {
     uniTransform = gl.getUniformLocation(glProgram, "transformMatrix");
     uniSampler = gl.getUniformLocation(glProgram, "uSampler");
     uniNormalTransform = gl.getUniformLocation(glProgram, "normalTransformMatrix");
-    loadUniforms(Mat4.I());
+    loadUniforms(Mat4.I(), Mat4.I());
     coordinatesVar = gl.getAttribLocation(glProgram, "coordinates");
     textureCoordinatesVar = gl.getAttribLocation(glProgram, "texCoords");
     normalVar = gl.getAttribLocation(glProgram, "normals");
@@ -272,7 +274,7 @@ class TexturedProgram extends GLGenericProgram {
 
 
   void drawGltfPrimitiveIndices(
-        Mat4 transform,
+        Mat4 transform, Mat4 normalTransform,
         gltf.Model model, gltf.Primitive primitive,
         webgl.Buffer arrayBuffer, webgl.Buffer elementArrayBuffer) {
 
@@ -288,7 +290,7 @@ class TexturedProgram extends GLGenericProgram {
     var normalAccess = model.root.accessors[primitive.attributes.NORMAL];
     GlRenderModel.bindGltfAccessor(gl, normalAccess, normalVar, model);
 
-    loadUniforms(transform);
+    loadUniforms(transform, normalTransform);
     gl.uniform1i(uniSampler, 0);
 
     // Bind the indices and render out
@@ -526,7 +528,7 @@ class GlRenderModel {
     // gl.uniform1i(gl.getUniformLocation(glProgram, "uSampler"), 0);
 
 
-        shader.drawGltfPrimitiveIndices(transform, model, primitive, accessorBuf, indicesBuf);
+        shader.drawGltfPrimitiveIndices(transform, Mat4.I(), model, primitive, accessorBuf, indicesBuf);
 
 
         // // Bind the position data
