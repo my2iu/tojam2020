@@ -6,6 +6,16 @@
         <script defer src="main.dart.js"></script>
     </head>
     <body>
+        <script>
+            // The generated Dart code has some bullshit where it has tobe
+            // hosted from the root of a server unless you put in a base tag or something
+            var basePath = window.location.pathname;
+            if (!basePath.endsWith('/') && basePath.lastIndexOf('/') >= 0)
+                basePath = basePath.substring(0, basePath.lastIndexOf('/') + 1);
+            var base = document.createElement('base');
+            base.href = basePath;
+            document.head.appendChild(base);
+        </script>
         <canvas style="width: 500px; height: 300px;"></canvas>
         <div class="titleButtons"></div>
     </body>

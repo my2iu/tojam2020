@@ -37,7 +37,4 @@ void drawRope(shaders.GlRenderModel modelRender, webgl.RenderingContext gl,
       .translateThis(-1.95, -2.05, 1.75) // Move center of block to origin. Coordinate range is (1.9->2, 2->2.1, -1.8->-1.7)
       ), 0);
   }
-  window.console.log(lowest.toString() + " " + y.toString());
-
-
 }
