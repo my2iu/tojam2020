@@ -24,6 +24,7 @@ void loadResources() {
   });
   gltf.loadGlb('resources/ming_floor.glb').then((gltfmodel) {
     floorModel = gltfmodel;
+    // Coordinate range is (0->4, 2->2.4, -4->4)
   });
   gltf.loadGlb('resources/singleblock.glb').then((gltfmodel) {
     blockModel = gltfmodel;
@@ -214,20 +215,25 @@ void _drawScene(webgl.RenderingContext gl, XRView view) {
   triProgram.draw(buf);
   buf.close();
 
-  if (model != null) {
-    if (modelRender == null) {
-      modelRender = new shaders.GlRenderModel(model, textureProgram);
-      modelRender.createBuffers(gl);
-    }
-    modelRender.renderScene(gl, transformMatrix.mul(Mat4.I().translateThis(2, 0, -3)), 0);
-    // TODO: Close the modelRender
-  }
+  // if (model != null) {
+  //   if (modelRender == null) {
+  //     modelRender = new shaders.GlRenderModel(model, textureProgram);
+  //     modelRender.createBuffers(gl);
+  //   }
+  //   modelRender.renderScene(gl, transformMatrix.mul(Mat4.I().translateThis(2, 0, -3)), 0);
+  //   // TODO: Close the modelRender
+  // }
   if (floorModel != null) {
     if (floorRender == null) {
       floorRender = new shaders.GlRenderModel(floorModel, textureProgram);
       floorRender.createBuffers(gl);
     }
-    floorRender.renderScene(gl, transformMatrix.mul(Mat4.I().translateThis(-2, -2 - 1.5, 2)), 0);
+    floorRender.renderScene(gl, transformMatrix.mul(
+      Mat4.I().translateThis(0, -0.5, 0)
+      .scaleThis(2, 2, 2)
+      .translateThis(-2, -2.1, 2)  // drop origin to floor and middle. Coordinate range is (0->4, 2->2.4, -4->0)
+
+      ), 0);
     // TODO: Close the floorRender
   }
 
