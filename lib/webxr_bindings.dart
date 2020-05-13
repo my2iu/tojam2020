@@ -28,11 +28,14 @@ class XRSession {
   external void updateRenderState(XRRenderStateInit options);
   external dynamic requestReferenceSpace(String referenceSpaceType);
   external dynamic end();
+  external void addEventListener(String type, EventListener listener,
+      [bool useCapture]);
 }
 
 @JS("XRFrame")
 class XRFrame {
   external XRSession get session;
+  external XRPose getPose(XRSpace space, XRSpace baseSpace);
   external XRViewerPose getViewerPose(XRReferenceSpace referenceSpace);  
 }
 
@@ -70,7 +73,7 @@ class XRSpace {
 }
 
 @JS("XRReferenceSpace")
-class XRReferenceSpace {
+class XRReferenceSpace extends XRSpace {
   external XRReferenceSpace getOffsetReferenceSpace(XRRigidTransform offset);
 }
 
@@ -114,7 +117,8 @@ class DOMPointInit {
 
 @JS("XRPose")
 class XRPose {
-
+  external XRRigidTransform get transform;
+  external bool get emulationPosition;
 }
 
 @JS("XRViewerPose")
@@ -124,7 +128,18 @@ class XRViewerPose {
 
 @JS("XRInputSource")
 class XRInputSource {
+  external dynamic get gamepad;
+  external XRSpace get gripSpace;
+  external String get handedness;
+  external List<String> get profiles;
+  external String get targetRayMode;
+  external XRSpace get targetRaySpace;
+}
 
+@JS("XRInputSourceEvent")
+class XRInputSourceEvent {
+  external XRFrame get frame;
+  external XRInputSource get inputSource;
 }
 
 XR get navigatorXr {
