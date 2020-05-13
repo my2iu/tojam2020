@@ -382,7 +382,7 @@ class GlRenderModel {
     if (model.root.scenes[sceneIdx].nodes != null) {
       model.root.scenes[sceneIdx].nodes.forEach((nodeIdx) {
         renderNode(gl, transform, nodeIdx);
-      });
+      } as void Function(int));
     }
   }
 
@@ -404,7 +404,7 @@ class GlRenderModel {
     if (node.children != null) {
       node.children.forEach((childIdx) {
         renderNode(gl, transform, childIdx);
-      });
+      } as void Function(int));
     }
     if (node.mesh != null) {
       renderMesh(gl, transform, node.mesh);
@@ -552,7 +552,7 @@ class GlRenderModel {
       } else {
         throw "Draw gltf non-indices not implemented";
       }
-    });
+    } as void Function(gltf.Primitive));
   }
 
   static void bindIndicesAndDrawElements(gltf.Model model, gltf.Primitive primitive, webgl.RenderingContext gl) {

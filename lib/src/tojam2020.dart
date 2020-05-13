@@ -167,7 +167,7 @@ void _renderFrame(num time, XRFrame frame, webgl.RenderingContext gl, XRReferenc
       viewTop = Math.min(viewTop, viewport.y);
       viewRight = Math.max(viewRight, viewport.x + viewport.width);
       viewBottom = Math.max(viewBottom, viewport.y + viewport.height);
-    });
+    } as void Function(XRView));
 
     // Render normally
     pose.views.forEach((view) {
@@ -175,7 +175,7 @@ void _renderFrame(num time, XRFrame frame, webgl.RenderingContext gl, XRReferenc
 
       gl.viewport(viewport.x, viewport.y, viewport.width, viewport.height);
       _drawScene(gl, view);
-    });
+    } as void Function(XRView));
 
     // Render to canvas as well
     gl.canvas.width = viewRight - viewLeft;

@@ -82,7 +82,7 @@ Future<Model> loadGlb(String file) {
       }));
       // imgEl.src = 'resources/256x1.png';
       imgEl.src = Url.createObjectUrl(blob);
-    });
+    } as void Function(Image));
     // TODO: Also separate out the texture data, then we can just dump the
     // original buffer entirely
 
@@ -138,6 +138,7 @@ class AccessorMemory {
     // accessor data. This won't work if accessor data is intermixed
     // with image data or stored in different files etc.
     int accessorDataStart = -1, accessorDataEnd = -1;
+
     accessors.forEach((accessor) {
       if (accessor.bufferView == null) return;
       var bufView = model.root.bufferViews[accessor.bufferView];
@@ -150,7 +151,7 @@ class AccessorMemory {
       if (accessorDataEnd == -1 || byteOffset + bufView.byteLength > accessorDataEnd) {
         accessorDataEnd = byteOffset + bufView.byteLength;
       }
-    });
+    } as void Function(Accessor));
     return AccessorMemory(model.binData.sublist(accessorDataStart, accessorDataEnd), -accessorDataStart);
   }
 
