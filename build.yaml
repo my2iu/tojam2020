@@ -1,0 +1,10 @@
+# I'm having problems where the code would compile in no-release mode, but
+# not in release mode. Apparently, having this build.yaml file will force
+# the use of dart2js in no-release mode to debug some typing issues that
+# are handled differently between the different compilers.
+targets:
+  $default:
+    builders:
+      build_web_compilers|entrypoint:
+        options:
+          compiler: dart2js
