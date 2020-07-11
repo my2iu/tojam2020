@@ -9,6 +9,8 @@ import 'dart:js';
 import 'package:js/js.dart';
 import 'dart:web_gl' as webgl;
 
+// Chrome has started not using a real XR class for this object, which causes
+// Dart to go into fits, so we can't use this class
 @JS("XR")
 class XR {
   //@JS("isSessionSupported")
@@ -142,6 +144,8 @@ class XRInputSourceEvent {
   external XRInputSource get inputSource;
 }
 
-XR get navigatorXr {
+// Can't return an object of type XR because in recent versions of Chrome, 
+// it isn't an instance of that class though it has the same API
+dynamic get navigatorXr {
   return getProperty(window.navigator, 'xr');
 }

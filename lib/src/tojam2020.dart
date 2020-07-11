@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:html';
 import 'package:tojam2020/webxr_bindings.dart';
 import 'package:js/js.dart';
+import 'dart:js_util';
 import 'dart:web_gl' as webgl;
 import 'dart:web_gl' show WebGL;
 import 'package:tojam2020/src/gl_shaders.dart' as shaders;
@@ -44,7 +45,7 @@ void showStartButton(Element uiDiv) {
 
 
   // Show the 'Start Vr' button
-  promiseToFuture<bool>(navigatorXr.isSessionSupported("immersive-vr"))
+  promiseToFuture<bool>(callMethod(navigatorXr, "isSessionSupported", ["immersive-vr"]))
       .then((supported) {
     if (!supported) return;
     uiDiv.appendHtml('<a href="#" class="startVr"><div><span>Start VR</span></div></a>');
@@ -56,7 +57,7 @@ void showStartButton(Element uiDiv) {
   });
 
   // Show the 'Start inline' button
-  promiseToFuture<bool>(navigatorXr.isSessionSupported("inline"))
+  promiseToFuture<bool>(callMethod(navigatorXr, "isSessionSupported", ["inline"]))
       .then((supported) {
     if (!supported) return;
     uiDiv.appendHtml(
@@ -95,7 +96,7 @@ void createExitVrButton(XRSession session) {
 
 void _startInline(String sessionType, String refType) {
   lastTime = null;
-  promiseToFuture<XRSession>(navigatorXr.requestSession(sessionType))
+  promiseToFuture<XRSession>(callMethod(navigatorXr, "requestSession", [sessionType]))
       .then((session) {
     createExitVrButton(session);
     keyListener = document.onKeyDown.listen((evt) {
